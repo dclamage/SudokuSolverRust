@@ -1,4 +1,5 @@
 use bit_iter::BitIter;
+use itertools::Itertools;
 
 pub const VALUE_SET_MASK: u32 = 1u32 << 31;
 pub const CANDIDATES_MASK: u32 = !VALUE_SET_MASK;
@@ -402,6 +403,19 @@ pub fn parse_cells(cell_string: &str, size: usize) -> Result<Vec<Vec<usize>>, St
     result.sort();
 
     Result::Ok(result)
+}
+
+/// Returns a list of candidate pairs for each value within the given set of cells.
+pub fn get_candidate_pairs(size: usize, cells: &[usize]) -> Vec<(usize, usize)> {
+    let mut result = Vec::new();
+    for val in 1..=size {
+        for cell_pair in cells.iter().combinations(2) {
+            let cand0 = candidate_index(*cell_pair[0], val, size);
+            let cand1 = candidate_index(*cell_pair[1], val, size);
+            result.push((cand0, cand1));
+        }
+    }
+    result
 }
 
 #[rustfmt::skip]

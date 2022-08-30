@@ -1,5 +1,6 @@
 use crate::board::Board;
 use crate::board_utility::*;
+use crate::house::House;
 use crate::logic_result::LogicResult;
 use crate::logical_steps::LogicalSteps;
 use std::vec::Vec;
@@ -104,8 +105,6 @@ pub trait Constraint {
         Vec::new()
     }
 
-    /// **Do not override or call directly.**
-    ///
     /// Can be used by [`Constraint::cells_must_contain`] to automatically determine the
     /// answer based on running the [`Constraint::step_logic`] method.
     ///
@@ -175,12 +174,14 @@ pub trait Constraint {
     /// [`Constraint::step_logic`] method. For example, a nonconsecutive constraint does not need
     /// to check if a cell has only `1,2` left, which elimiates `1,2` from adjacent cells. The solver
     /// will figure this out itself via cell forcing.
-    fn get_weak_links(&self) -> Vec<(usize, usize)> {
+    ///
+    /// [`get_candidate_pairs`] is especially useful for this method, which generates all candidates
+    /// pairs for all values within a group of cells. Passing in a group of cells which cannot
+    /// repeat will generate the needed weak link pairs for that group.
+    fn get_weak_links(&self, _size: usize) -> Vec<(usize, usize)> {
         Vec::new()
     }
 
-    /// **Do not override or call directly.**
-    ///
     /// Can be used by [`Constraint::get_weak_links`] to automatically determine the
     /// answer based on running the [`Constraint::step_logic`] method.
     ///
@@ -240,5 +241,17 @@ pub trait Constraint {
         }
 
         result
+    }
+
+    /// Some contraints essentially create new houses. For example, an extra region
+    /// constraint, or a Killer Cage sized such that it must contain every digit.
+    /// Even constraints like a Renban can be considered to create new houses if
+    /// they are of the correct size.
+    ///
+    /// This method returns a [`Vec`] of [`House`] which are created by the constraint.
+    ///
+    /// The size of the board is passed in so that the constraint can know the size of the house.
+    fn get_houses(&self, _size: usize) -> Vec<House> {
+        Vec::new()
     }
 }
