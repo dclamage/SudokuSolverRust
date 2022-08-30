@@ -9,6 +9,13 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "23067a77080631c5d676e61865867f5e595a3f9a50bf6973e24fb7ce5c20ee91"
 
 [[package]]
+name = "sudoku-solver-console"
+version = "0.1.0"
+dependencies = [
+ "sudoku-solver-lib",
+]
+
+[[package]]
 name = "sudoku-solver-lib"
 version = "0.1.0"
 dependencies = [

@@ -8,7 +8,7 @@ pub struct Solver {
 }
 
 impl Solver {
-    pub fn new(size: usize, constraints: &Vec<Arc<dyn Constraint>>) -> Solver {
+    pub fn new(size: usize, constraints: &[Arc<dyn Constraint>]) -> Solver {
         Solver {
             board: Board::new(size, constraints),
         }

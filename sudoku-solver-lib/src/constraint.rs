@@ -82,13 +82,8 @@ pub trait Constraint {
                 continue;
             }
 
-            let min_val = min_value(orig_mask);
-            let max_val = max_value(orig_mask);
-            for val in min_val..=max_val {
+            for val in values_from_mask(orig_mask) {
                 let cand0 = candidate_index(cell, val, size);
-                if !has_value(orig_mask, val) {
-                    continue;
-                }
 
                 let mut board_clone = board.clone();
                 if !board_clone.set_value(cell, val) {
@@ -116,14 +111,10 @@ pub trait Constraint {
                     let orig_mask1 = board.get_cell_mask(cell1) & CANDIDATES_MASK;
                     let new_mask1 = board_clone.get_cell_mask(cell1) & CANDIDATES_MASK;
                     if orig_mask1 != new_mask1 {
-                        let diff_mask1 = orig_mask1 & !new_mask1;
-                        let diff_min = min_value(diff_mask1);
-                        let diff_max = max_value(diff_mask1);
-                        for val1 in diff_min..=diff_max {
-                            if has_value(diff_mask1, val1) {
-                                let cand1 = candidate_index(cell1, val1, size);
-                                result.push((cand0, cand1));
-                            }
+                        let diff_mask = orig_mask1 & !new_mask1;
+                        for val1 in values_from_mask(diff_mask) {
+                            let cand1 = candidate_index(cell1, val1, size);
+                            result.push((cand0, cand1));
                         }
                     }
                 }

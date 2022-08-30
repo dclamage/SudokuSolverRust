@@ -1,0 +1,5 @@
+[workspace]
+members = [
+  "sudoku-solver-console",
+  "sudoku-solver-lib"
+]

@@ -1,3 +1,5 @@
+use bit_iter::BitIter;
+
 pub const VALUE_SET_MASK: u32 = 1u32 << 31;
 pub const CANDIDATES_MASK: u32 = !VALUE_SET_MASK;
 
@@ -78,18 +80,18 @@ pub fn candidate_index_to_cell_and_value(candidate_index: usize, size: usize) ->
     (candidate_index / size, candidate_index % size + 1)
 }
 
+pub fn values_from_mask(mask: u32) -> impl Iterator<Item = usize> {
+    BitIter::from(mask & CANDIDATES_MASK).map(|n| n + 1)
+}
+
 pub fn mask_to_string(mask: u32) -> String {
     let mut s = String::new();
     if mask != 0 {
-        let min_value = min_value(mask);
-        let max_value = max_value(mask);
-        for val in min_value..=max_value {
-            if has_value(mask, val) {
-                if s.len() > 0 {
-                    s.push(',');
-                }
-                s.push_str(&val.to_string());
+        for val in values_from_mask(mask) {
+            if s.len() > 0 {
+                s.push(',');
             }
+            s.push_str(&val.to_string());
         }
     }
     s
@@ -405,6 +407,8 @@ pub fn parse_cells(cell_string: &str, size: usize) -> Result<Vec<Vec<usize>>, St
 #[rustfmt::skip]
 #[cfg(test)]
 mod test {
+    use itertools::assert_equal;
+
     use super::*;
 
 	#[test]
@@ -457,6 +461,18 @@ mod test {
 		assert!(has_value(value_mask(3), 3));
 		assert!(!has_value(values_mask(&[1,2,3,5,6,7,8,9]), 4));
 	}
+
+    #[test]
+    fn test_mask_iterator() {
+        assert_equal(values_from_mask(0), vec![]);
+        assert_equal(values_from_mask(0b0000_0000_0000_0000_0000_0000_0000_0001), vec![1]);
+        assert_equal(values_from_mask(0b1000_0000_0000_0000_0000_0000_0000_0001), vec![1]);
+        assert_equal(values_from_mask(0b0000_0000_0000_0000_0000_0000_0000_0010), vec![2]);
+        assert_equal(values_from_mask(0b0000_0000_0000_0000_0000_0000_0001_0010), vec![2, 5]);
+        assert_equal(values_from_mask(0b0000_0000_0000_0000_0000_0001_1111_1111), vec![1, 2, 3, 4, 5, 6, 7, 8, 9]);
+        assert_equal(values_from_mask(0b1000_0000_0000_0000_0000_0001_1111_1111), vec![1, 2, 3, 4, 5, 6, 7, 8, 9]);
+        assert_equal(values_from_mask(values_mask(&[1, 4, 8])), vec![1, 4, 8]);
+    }
 
 	#[test]
 	fn test_cell_index() {
