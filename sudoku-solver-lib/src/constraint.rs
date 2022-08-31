@@ -2,7 +2,7 @@ use crate::board::Board;
 use crate::board_utility::*;
 use crate::house::House;
 use crate::logic_result::LogicResult;
-use crate::logical_steps::LogicalSteps;
+use crate::logical_step_desc::LogicalStepDescList;
 use std::vec::Vec;
 
 /// [`Constraint`] is a trait that defines the logic of a constraint.
@@ -77,10 +77,10 @@ pub trait Constraint {
     ///
     /// Do not attempt to do any logic which isn't relevant to this constraint.
     ///
-    /// Any eliminations should be tracked and added to the [`LogicalSteps`] object if provided,
+    /// Any eliminations should be tracked and added to the [`LogicalStepDescs`] object if provided,
     /// along with a human readable description of why those eliminations occurred.
     ///
-    /// Eliminations do not need to be tracked if the [`LogicalSteps`] object is not provided.
+    /// Eliminations do not need to be tracked if the [`LogicalStepDescs`] object is not provided.
     ///
     /// Return the following based on the situation. You must track this yourself and return an accurate [`LogicResult`]:
     /// - [`LogicResult::None`] if the board is unchanged.
@@ -90,7 +90,7 @@ pub trait Constraint {
     fn step_logic(
         &self,
         _board: &mut Board,
-        _logical_steps: Option<&mut LogicalSteps>,
+        _logical_steps: Option<&mut LogicalStepDescList>,
         _is_brute_forcing: bool,
     ) -> LogicResult {
         LogicResult::None

@@ -1,21 +1,21 @@
 #[derive(Clone)]
-pub struct LogicalStep {
+pub struct LogicalStepDesc {
     pub desc: String,
     pub highlight_cells: Vec<usize>,
     pub source_candidates: Vec<usize>,
     pub elim_candidates: Vec<usize>,
     pub strong_links: Vec<(usize, usize)>,
     pub weak_links: Vec<(usize, usize)>,
-    pub sub_steps: Vec<LogicalStep>,
+    pub sub_steps: Vec<LogicalStepDesc>,
     pub is_single_step: bool,
 }
 
-pub struct LogicalSteps {
-    pub steps: Vec<LogicalStep>,
+pub struct LogicalStepDescList {
+    pub steps: Vec<LogicalStepDesc>,
 }
 
-impl LogicalSteps {
-    pub fn new() -> LogicalSteps {
-        LogicalSteps { steps: Vec::new() }
+impl LogicalStepDescList {
+    pub fn new() -> LogicalStepDescList {
+        LogicalStepDescList { steps: Vec::new() }
     }
 }
