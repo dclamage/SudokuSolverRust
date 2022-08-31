@@ -1,68 +1,539 @@
 use bit_iter::BitIter;
 use itertools::Itertools;
 
+/// The top bit of a cell mask is set if the cell has been set
+/// to a single value, and all the consequences of setting the
+/// value have been executed.
 pub const VALUE_SET_MASK: u32 = 1u32 << 31;
+
+/// A mask that will get just the value bits from a cell mask,
+/// ignoring the value set bit.
 pub const CANDIDATES_MASK: u32 = !VALUE_SET_MASK;
 
+/// Counts the number of values in a cell mask.
+///
+/// # Arguments
+/// * `mask` - The cell mask to count the number of values in.
+///
+/// # Return value
+/// The count of values in the cell mask.
+///
+/// # Example
+/// ```
+/// # use sudoku_solver_lib::board_utility::*;
+/// # use sudoku_solver_lib::board::Board;
+/// // Create a default board.
+/// let mut board = Board::default();
+///
+/// // r1c1 should start with all values.
+/// assert_eq!(value_count(board.get_cell_mask(0)), board.size());
+///
+/// // Clear candidate 2 from r1c1
+/// board.clear_value(0, 2);
+///
+/// // r1c1 should now have one fewer value.
+/// assert_eq!(value_count(board.get_cell_mask(0)), board.size() - 1);
+///
+/// // Set r1c1 to 3
+/// board.set_value(0, 3);
+///
+/// // r1c1 should now have one value.
+/// assert_eq!(value_count(board.get_cell_mask(0)), 1);
+///
+/// // r1c1 should be set.
+/// assert!(board.get_cell_mask(0) & VALUE_SET_MASK != 0);
+///
+/// // Since r1c1 was set to 3, all cells seen by r1c1 should have 3 eliminated.
+/// // Thus, r1c2 should not have the 3 candidate and should have a count of 8.
+/// assert!(!board.cell_has_value(1, 3));
+/// assert_eq!(value_count(board.get_cell_mask(1)), 8);
+/// ```
 pub fn value_count(mask: u32) -> usize {
     (mask & CANDIDATES_MASK).count_ones() as usize
 }
 
-// Assumes only one value remains
+/// Get the value of a cell mask.
+///
+/// Assumes the cell mask is set to a single value.
+/// If the cell mask is not set to a single value, then this
+/// behaves the same way as [`min_value`].
+///
+/// # Arguments
+/// * `mask` - The cell mask to get the value of.
+///
+/// # Return value
+/// The value of the cell mask.
+///
+/// # See also
+/// - [`min_value`] - Get the minimum value set in a cell mask.
+/// - [`max_value`] - Get the maximum value set in a cell mask.
+///
+/// # Example
+/// ```
+/// # use sudoku_solver_lib::board_utility::*;
+/// # use sudoku_solver_lib::board::Board;
+/// // Create a default board.
+/// let mut board = Board::default();
+///
+/// // Set r1c1 to 3
+/// board.set_value(0, 3);
+///
+/// // r1c1 should now have the value 3.
+/// assert_eq!(get_value(board.get_cell_mask(0)), 3);
+/// ```
 pub fn get_value(mask: u32) -> usize {
     ((mask & CANDIDATES_MASK).trailing_zeros() + 1) as usize
 }
 
+/// Get the minimum value set in a cell mask.
+///
+/// **Assumes the cell mask is non-zero.**
+/// - If the cell mask is zero, then the result is undefined.
+///
+/// # Arguments
+/// * `mask` - The cell mask to get the minimum value of.
+///
+/// # Return value
+/// The minimum value of the cell mask.
+///
+/// # See also
+/// - [`get_value`] - Get the value of a cell when only one value is set.
+/// - [`max_value`] - Get the maximum value set in a cell mask.
+///
+/// # Example
+/// ```
+/// # use sudoku_solver_lib::board_utility::*;
+/// # use sudoku_solver_lib::board::Board;
+/// // Create a default board.
+/// let mut board = Board::default();
+///
+/// // The minimum value of r1c1 should be 1.
+/// assert_eq!(min_value(board.get_cell_mask(0)), 1);
+///
+/// // Remove 1,2,5 from r1c1
+/// board.clear_value(0, 1);
+/// board.clear_value(0, 2);
+/// board.clear_value(0, 5);
+///
+/// // The minimum value of r1c1 should be 3.
+/// assert_eq!(min_value(board.get_cell_mask(0)), 3);
+/// ```
 pub fn min_value(mask: u32) -> usize {
     ((mask & CANDIDATES_MASK).trailing_zeros() + 1) as usize
 }
 
+/// Get the maximum value set in a cell mask.
+///
+/// **Assumes the cell mask is non-zero.**
+/// - If the cell mask is zero, then the result is undefined.
+///
+/// # Arguments
+/// * `mask` - The cell mask to get the maximum value of.
+///
+/// # Return value
+/// The maximum value of the cell mask.
+///
+/// # See also
+/// - [`get_value`] - Get the value of a cell when only one value is set.
+/// - [`min_value`] - Get the minimum value set in a cell mask.
+///
+/// # Example
+/// ```
+/// # use sudoku_solver_lib::board_utility::*;
+/// # use sudoku_solver_lib::board::Board;
+/// // Create a default board.
+/// let mut board = Board::default();
+///
+/// // The maximum value of r1c1 should be 9.
+/// assert_eq!(max_value(board.get_cell_mask(0)), 9);
+///
+/// // Remove 5, 8, 9 from r1c1
+/// board.clear_value(0, 5);
+/// board.clear_value(0, 8);
+/// board.clear_value(0, 9);
+///
+/// // The maximum value of r1c1 should be 7.
+/// assert_eq!(max_value(board.get_cell_mask(0)), 7);
+/// ```
 pub fn max_value(mask: u32) -> usize {
     32 - (mask & CANDIDATES_MASK).leading_zeros() as usize
 }
 
+/// Returns if the cell mask has been set to a single value,
+/// and all the consequences of setting the value have been
+/// executed.
+///
+/// # Arguments
+/// * `mask` - The cell mask to check.
+///
+/// # Return value
+/// `true` if the cell mask's value is set.
+/// `false` otherwise.
+///
+/// # Example
+/// ```
+/// # use sudoku_solver_lib::board_utility::*;
+/// # use sudoku_solver_lib::board::Board;
+/// // Create a default board.
+/// let mut board = Board::default();
+///
+/// // r1c1 should not be set.
+/// assert!(!is_value_set(board.get_cell_mask(0)));
+///
+/// // Clear all but 3 from the cell
+/// board.clear_value(0, 1);
+/// board.clear_value(0, 2);
+/// board.clear_value(0, 4);
+/// board.clear_value(0, 5);
+/// board.clear_value(0, 6);
+/// board.clear_value(0, 7);
+/// board.clear_value(0, 8);
+/// board.clear_value(0, 9);
+///
+/// // r1c1 should still not be set even though it has only one value.
+/// // Because the consequences of setting the value have not been executed.
+/// assert_eq!(value_count(board.get_cell_mask(0)), 1);
+/// assert!(!is_value_set(board.get_cell_mask(0)));
+///
+/// // Set r1c1 to 3.
+/// board.set_value(0, 3);
+///
+/// // r1c1 should now be set.
+/// assert!(is_value_set(board.get_cell_mask(0)));
+/// ```
 pub fn is_value_set(mask: u32) -> bool {
     (mask & VALUE_SET_MASK) != 0
 }
 
+/// Create a value mask from a value.
+///
+/// # Arguments
+/// * `value` - The value to create the mask from.
+///
+/// # Return value
+/// The value mask.
+///
+/// # Example
+/// ```
+/// # use sudoku_solver_lib::board_utility::*;
+/// // Create a mask from the value 3.
+/// let mask = value_mask(3);
+///
+/// // The mask should have only the value 3 set.
+/// assert!(!has_value(mask, 1));
+/// assert!(!has_value(mask, 2));
+/// assert!(has_value(mask, 3));
+/// assert!(!has_value(mask, 4));
+/// assert!(!has_value(mask, 5));
+/// assert!(!has_value(mask, 6));
+/// assert!(!has_value(mask, 7));
+/// assert!(!has_value(mask, 8));
+/// assert!(!has_value(mask, 9));
+/// ```
 pub fn value_mask(val: usize) -> u32 {
     1u32 << (val - 1)
 }
 
+/// Create a value mask from multiple values.
+///
+/// # Arguments
+/// * `values` - The values to create the mask from.
+///
+/// # Return value
+/// The value mask.
+///
+/// # Example
+/// ```
+/// # use sudoku_solver_lib::board_utility::*;
+/// // Create a mask from the value 3.
+/// let mask = values_mask(&[3, 4, 5]);
+///
+/// // The mask should have only the value 3, 4, 5 set.
+/// assert!(!has_value(mask, 1));
+/// assert!(!has_value(mask, 2));
+/// assert!(has_value(mask, 3));
+/// assert!(has_value(mask, 4));
+/// assert!(has_value(mask, 5));
+/// assert!(!has_value(mask, 6));
+/// assert!(!has_value(mask, 7));
+/// assert!(!has_value(mask, 8));
+/// assert!(!has_value(mask, 9));
+/// ```
 pub fn values_mask(vals: &[usize]) -> u32 {
     vals.iter().fold(0u32, |acc, &val| acc | value_mask(val))
 }
 
+/// Create a value mask which contains all values for a given board size.
+///
+/// # Arguments
+/// * `size` - The size of the board.
+///
+/// # Return value
+/// The value mask.
+///
+/// # Example
+/// ```
+/// # use sudoku_solver_lib::board_utility::*;
+/// // Create a mask with all values for size 9
+/// let mask = all_values_mask(9);
+///
+/// // The mask should have all values set.
+/// assert!(has_value(mask, 1));
+/// assert!(has_value(mask, 2));
+/// assert!(has_value(mask, 3));
+/// assert!(has_value(mask, 4));
+/// assert!(has_value(mask, 5));
+/// assert!(has_value(mask, 6));
+/// assert!(has_value(mask, 7));
+/// assert!(has_value(mask, 8));
+/// assert!(has_value(mask, 9));
+/// ```
 pub fn all_values_mask(size: usize) -> u32 {
     (1u32 << size) - 1
 }
 
+/// Check if a value is in a value mask.
+///
+/// # Arguments
+/// * `mask` - The value mask to check.
+/// * `value` - The value to check for.
+///
+/// # Return value
+/// `true` if the value is in the value mask.
+/// `false` otherwise.
+///
+/// # Example
+/// See [`all_values_mask`] for an example.
 pub fn has_value(mask: u32, val: usize) -> bool {
     (mask & value_mask(val)) != 0
 }
 
-pub fn mask_strictly_lower(val: usize) -> u32 {
+/// Creates a mask with all values strictly lower than the given value.
+///
+/// # Arguments
+/// * `val` - The value to create the mask from.
+///
+/// # Return value
+/// The value mask.
+///
+/// # See also
+/// [`mask_lower_equal`]
+/// [`mask_higher`]
+/// [`mask_higher_equal`]
+/// [`mask_between_inclusive`]
+/// [`mask_between_exclusive`]
+/// [`all_values_mask`]
+///
+/// # Example
+/// ```
+/// # use sudoku_solver_lib::board_utility::*;
+/// // Create a mask with all values strictly lower than 3.
+/// let mask = mask_lower(3);
+///
+/// // The mask should have only the values 1 and 2 set.
+/// assert!(has_value(mask, 1));
+/// assert!(has_value(mask, 2));
+/// assert!(!has_value(mask, 3));
+/// assert!(!has_value(mask, 4));
+/// assert!(!has_value(mask, 5));
+/// assert!(!has_value(mask, 6));
+/// assert!(!has_value(mask, 7));
+/// assert!(!has_value(mask, 8));
+/// assert!(!has_value(mask, 9));
+/// ```
+pub fn mask_lower(val: usize) -> u32 {
     (1u32 << (val - 1)) - 1
 }
 
-pub fn mask_val_and_lower(val: usize) -> u32 {
+/// Creates a mask with all values lower than or equal to the given value.
+///
+/// # Arguments
+/// * `val` - The value to create the mask from.
+///
+/// # Return value
+/// The value mask.
+///
+/// # See also
+/// [`mask_lower`]
+/// [`mask_higher`]
+/// [`mask_higher_equal`]
+/// [`mask_between_inclusive`]
+/// [`mask_between_exclusive`]
+/// [`all_values_mask`]
+///
+/// # Example
+/// ```
+/// # use sudoku_solver_lib::board_utility::*;
+/// // Create a mask with all values lower than or equal to 3.
+/// let mask = mask_lower_equal(3);
+///
+/// // The mask should have only the values 1, 2 and 3 set.
+/// assert!(has_value(mask, 1));
+/// assert!(has_value(mask, 2));
+/// assert!(has_value(mask, 3));
+/// assert!(!has_value(mask, 4));
+/// assert!(!has_value(mask, 5));
+/// assert!(!has_value(mask, 6));
+/// assert!(!has_value(mask, 7));
+/// assert!(!has_value(mask, 8));
+/// assert!(!has_value(mask, 9));
+/// ```
+pub fn mask_lower_equal(val: usize) -> u32 {
     (1u32 << val) - 1
 }
 
-pub fn mask_strictly_higher(val: usize, all_values_mask: u32) -> u32 {
-    all_values_mask & !mask_val_and_lower(val)
+/// Creates a mask with all values strictly higher than the given value.
+///
+/// # Arguments
+/// * `val` - The value to create the mask from.
+/// * `all_values_mask` - A mask with all values for the board size.
+///
+/// # Return value
+/// The value mask.
+///
+/// # See also
+/// [`mask_lower`]
+/// [`mask_lower_equal`]
+/// [`mask_higher_equal`]
+/// [`mask_between_inclusive`]
+/// [`mask_between_exclusive`]
+/// [`all_values_mask`]
+///
+/// # Example
+/// ```
+/// # use sudoku_solver_lib::board_utility::*;
+/// // Create a mask with all values strictly higher than 3.
+/// let mask = mask_higher(3, all_values_mask(9));
+///
+/// // The mask should have only the values 4, 5, 6, 7, 8 and 9 set.
+/// assert!(!has_value(mask, 1));
+/// assert!(!has_value(mask, 2));
+/// assert!(!has_value(mask, 3));
+/// assert!(has_value(mask, 4));
+/// assert!(has_value(mask, 5));
+/// assert!(has_value(mask, 6));
+/// assert!(has_value(mask, 7));
+/// assert!(has_value(mask, 8));
+/// assert!(has_value(mask, 9));
+/// ```
+pub fn mask_higher(val: usize, all_values_mask: u32) -> u32 {
+    all_values_mask & !mask_lower_equal(val)
 }
 
-pub fn mask_val_and_higher(val: usize, all_values_mask: u32) -> u32 {
-    all_values_mask & !mask_strictly_lower(val)
+/// Creates a mask with all values higher than or equal to the given value.
+///
+/// # Arguments
+/// * `val` - The value to create the mask from.
+/// * `all_values_mask` - A mask with all values for the board size.
+///
+/// # Return value
+/// The value mask.
+///
+/// # See also
+/// [`mask_lower`]
+/// [`mask_lower_equal`]
+/// [`mask_higher`]
+/// [`mask_between_inclusive`]
+/// [`mask_between_exclusive`]
+/// [`all_values_mask`]
+///
+/// # Example
+/// ```
+/// # use sudoku_solver_lib::board_utility::*;
+/// // Create a mask with all values higher than or equal to 3.
+/// let mask = mask_higher_equal(3, all_values_mask(9));
+///
+/// // The mask should have only the values 3, 4, 5, 6, 7, 8 and 9 set.
+/// assert!(!has_value(mask, 1));
+/// assert!(!has_value(mask, 2));
+/// assert!(has_value(mask, 3));
+/// assert!(has_value(mask, 4));
+/// assert!(has_value(mask, 5));
+/// assert!(has_value(mask, 6));
+/// assert!(has_value(mask, 7));
+/// assert!(has_value(mask, 8));
+/// assert!(has_value(mask, 9));
+/// ```
+pub fn mask_higher_equal(val: usize, all_values_mask: u32) -> u32 {
+    all_values_mask & !mask_lower(val)
 }
 
+/// Creates a mask with all values between the given values (inclusive).
+///
+/// # Arguments
+/// * `lower_val` - The lower value to create the mask from (included in range).
+/// * `higher_val` - The higher value to create the mask from (included in range).
+/// * `all_values_mask` - A mask with all values for the board size.
+///
+/// # Return value
+/// The value mask.
+///
+/// # See also
+/// [`mask_lower`]
+/// [`mask_lower_equal`]
+/// [`mask_higher`]
+/// [`mask_higher_equal`]
+/// [`mask_between_exclusive`]
+/// [`all_values_mask`]
+///
+/// # Example
+/// ```
+/// # use sudoku_solver_lib::board_utility::*;
+/// // Create a mask with all values between 3 and 5 (inclusive).
+/// let mask = mask_between_inclusive(3, 5, all_values_mask(9));
+///
+/// // The mask should have only the values 3, 4, 5 set.
+/// assert!(!has_value(mask, 1));
+/// assert!(!has_value(mask, 2));
+/// assert!(has_value(mask, 3));
+/// assert!(has_value(mask, 4));
+/// assert!(has_value(mask, 5));
+/// assert!(!has_value(mask, 6));
+/// assert!(!has_value(mask, 7));
+/// assert!(!has_value(mask, 8));
+/// assert!(!has_value(mask, 9));
+/// ```
 pub fn mask_between_inclusive(low: usize, high: usize, all_values_mask: u32) -> u32 {
-    all_values_mask & !(mask_strictly_lower(low) | mask_strictly_higher(high, all_values_mask))
+    all_values_mask & !(mask_lower(low) | mask_higher(high, all_values_mask))
 }
 
+/// Creates a mask with all values between the given values (exclusive).
+///
+/// # Arguments
+/// * `lower_val` - The lower value to create the mask from (excluded from range).
+/// * `higher_val` - The higher value to create the mask from (excluded from range).
+/// * `all_values_mask` - A mask with all values for the board size.
+///
+/// # Return value
+/// The value mask.
+///
+/// # See also
+/// [`mask_lower`]
+/// [`mask_lower_equal`]
+/// [`mask_higher`]
+/// [`mask_higher_equal`]
+/// [`mask_between_inclusive`]
+/// [`all_values_mask`]
+///
+/// # Example
+/// ```
+/// # use sudoku_solver_lib::board_utility::*;
+/// // Create a mask with all values between 3 and 5 (exclusive).
+/// let mask = mask_between_exclusive(3, 5, all_values_mask(9));
+///
+/// // The mask should have only the value 4 set.
+/// assert!(!has_value(mask, 1));
+/// assert!(!has_value(mask, 2));
+/// assert!(!has_value(mask, 3));
+/// assert!(has_value(mask, 4));
+/// assert!(!has_value(mask, 5));
+/// assert!(!has_value(mask, 6));
+/// assert!(!has_value(mask, 7));
+/// assert!(!has_value(mask, 8));
+/// assert!(!has_value(mask, 9));
+/// ```
 pub fn mask_between_exclusive(low: usize, high: usize, all_values_mask: u32) -> u32 {
-    all_values_mask & !(mask_val_and_lower(low) | mask_val_and_higher(high, all_values_mask))
+    all_values_mask & !(mask_lower_equal(low) | mask_higher_equal(high, all_values_mask))
 }
 
 pub fn cell_index(row: usize, col: usize, size: usize) -> usize {
@@ -116,6 +587,11 @@ pub fn is_diagonal(i0: usize, j0: usize, i1: usize, j1: usize) -> bool {
     let i1 = i1 as isize;
     let j1 = j1 as isize;
     (i0 == i1 - 1 || i0 == i1 + 1) && (j0 == j1 - 1 || j0 == j1 + 1)
+}
+
+pub fn cell_index_name(cell: usize, size: usize) -> String {
+    let (row, col) = cell_row_col(cell, size);
+    format!("r{}c{}", row + 1, col + 1)
 }
 
 pub fn cell_name(cell: (usize, usize)) -> String {
@@ -418,6 +894,167 @@ pub fn get_candidate_pairs(size: usize, cells: &[usize]) -> Vec<(usize, usize)> 
     result
 }
 
+/// Generates a compact description of a group of cells.
+///
+/// # Arguments
+/// - `cells` - The cells to describe.
+/// - `size` - The size of the grid.
+///
+/// # Returns
+/// A string describing the cells.
+/// - If they all share a row, then it returns for example `r1c123`
+/// - If they all share a column, then it returns for example `r123c1`
+/// - Otherwise, the cells are separated into groups like `r1c123,r2c123,r3c123`
+///
+/// # Example
+/// ```
+/// # use sudoku_solver_lib::board_utility::*;
+/// // Assume a 9x9 grid.
+/// let size = 9;
+///
+/// // Create a list of the following cells: r1c1, r1c2, r1c3
+/// // (Cell indices are 0-based)
+/// let cells = vec![cell_index(0, 0, size), cell_index(0, 1, size), cell_index(0, 2, size)];
+///
+/// // Get the compact name.
+/// let compact_name = compact_name(&cells, size);
+/// assert_eq!(compact_name, "r1c123");
+/// ```
+pub fn compact_name(cells: &[usize], size: usize) -> String {
+    let cell_separator = if size <= 9 { "" } else { "," };
+    let group_separator = ",";
+
+    if cells.len() == 0 {
+        return "".to_string();
+    }
+
+    if cells.len() == 1 {
+        return cell_index_name(cells[0], size);
+    }
+
+    let cells: Vec<(usize, usize)> = cells
+        .iter()
+        .sorted()
+        .map(|cell| cell_row_col(*cell, size))
+        .collect();
+
+    // If all share a row, group all by row
+    let first_row = cells[0].0;
+    if cells.iter().all(|cell| cell.0 == first_row) {
+        return format!(
+            "r{}c{}",
+            cells[0].0 + 1,
+            cells
+                .iter()
+                .map(|cell| cell.1 + 1)
+                .sorted()
+                .join(&cell_separator)
+        );
+    }
+
+    // If all share a column, group all by column
+    let first_col = cells[0].1;
+    if cells.iter().all(|cell| cell.1 == first_col) {
+        return format!(
+            "r{}c{}",
+            cells
+                .iter()
+                .map(|cell| cell.0 + 1)
+                .sorted()
+                .join(&cell_separator),
+            cells[0].1 + 1
+        );
+    }
+
+    // More complex case that spans rows and cols
+    let grouped_by_row =
+        compact_name_grouped_by_row(&cells, size, &cell_separator, &group_separator);
+    let grouped_by_col =
+        compact_name_grouped_by_col(&cells, size, &cell_separator, &group_separator);
+
+    if grouped_by_row.len() < grouped_by_col.len() {
+        grouped_by_row
+    } else {
+        grouped_by_col
+    }
+}
+
+fn compact_name_grouped_by_row(
+    cells: &[(usize, usize)],
+    size: usize,
+    cell_separator: &str,
+    group_separator: &str,
+) -> String {
+    let mut cols_per_row: Vec<Vec<usize>> = vec![vec![]; size];
+    for cell in cells {
+        cols_per_row[cell.0].push(cell.1 + 1);
+    }
+    for i in 0..size {
+        cols_per_row[i].sort();
+    }
+
+    let mut groups: Vec<String> = Vec::new();
+    for i in 0..size {
+        if cols_per_row[i].len() == 0 {
+            continue;
+        }
+
+        let mut rows_in_group: Vec<usize> = vec![i + 1];
+        for j in i + 1..size {
+            if cols_per_row[j] == cols_per_row[i] {
+                rows_in_group.push(j + 1);
+                cols_per_row[j].clear();
+            }
+        }
+
+        groups.push(format!(
+            "r{}c{}",
+            rows_in_group.iter().join(cell_separator),
+            cols_per_row[i].iter().join(cell_separator)
+        ));
+    }
+
+    groups.join(&group_separator)
+}
+
+fn compact_name_grouped_by_col(
+    cells: &[(usize, usize)],
+    size: usize,
+    cell_separator: &str,
+    group_separator: &str,
+) -> String {
+    let mut rows_per_col: Vec<Vec<usize>> = vec![vec![]; size];
+    for cell in cells {
+        rows_per_col[cell.1].push(cell.0 + 1);
+    }
+    for i in 0..size {
+        rows_per_col[i].sort();
+    }
+
+    let mut groups: Vec<String> = Vec::new();
+    for i in 0..size {
+        if rows_per_col[i].len() == 0 {
+            continue;
+        }
+
+        let mut cols_in_group: Vec<usize> = vec![i + 1];
+        for j in i + 1..size {
+            if rows_per_col[j] == rows_per_col[i] {
+                cols_in_group.push(j + 1);
+                rows_per_col[j].clear();
+            }
+        }
+
+        groups.push(format!(
+            "r{}c{}",
+            rows_per_col[i].iter().join(&cell_separator),
+            cols_in_group.iter().join(&cell_separator)
+        ));
+    }
+
+    groups.join(&group_separator)
+}
+
 #[rustfmt::skip]
 #[cfg(test)]
 mod test {
@@ -440,14 +1077,14 @@ mod test {
 		assert_eq!(all_values_mask(16), 0b0000_0000_0000_0000_1111_1111_1111_1111);
 
 		let avm = all_values_mask(9);
-		assert_eq!(mask_strictly_lower(2), 0b0000_0000_0000_0000_0000_0000_0000_0001);
-		assert_eq!(mask_strictly_lower(4), 0b0000_0000_0000_0000_0000_0000_0000_0111);
-		assert_eq!(mask_val_and_lower(2), 0b0000_0000_0000_0000_0000_0000_0000_0011);
-		assert_eq!(mask_val_and_lower(4), 0b0000_0000_0000_0000_0000_0000_0000_1111);
-		assert_eq!(mask_strictly_higher(2, avm), 0b0000_0000_0000_0000_0000_0001_1111_1100);
-		assert_eq!(mask_strictly_higher(4, avm), 0b0000_0000_0000_0000_0000_0001_1111_0000);
-		assert_eq!(mask_val_and_higher(2, avm), 0b0000_0000_0000_0000_0000_0001_1111_1110);
-		assert_eq!(mask_val_and_higher(4, avm), 0b0000_0000_0000_0000_0000_0001_1111_1000);
+		assert_eq!(mask_lower(2), 0b0000_0000_0000_0000_0000_0000_0000_0001);
+		assert_eq!(mask_lower(4), 0b0000_0000_0000_0000_0000_0000_0000_0111);
+		assert_eq!(mask_lower_equal(2), 0b0000_0000_0000_0000_0000_0000_0000_0011);
+		assert_eq!(mask_lower_equal(4), 0b0000_0000_0000_0000_0000_0000_0000_1111);
+		assert_eq!(mask_higher(2, avm), 0b0000_0000_0000_0000_0000_0001_1111_1100);
+		assert_eq!(mask_higher(4, avm), 0b0000_0000_0000_0000_0000_0001_1111_0000);
+		assert_eq!(mask_higher_equal(2, avm), 0b0000_0000_0000_0000_0000_0001_1111_1110);
+		assert_eq!(mask_higher_equal(4, avm), 0b0000_0000_0000_0000_0000_0001_1111_1000);
 		assert_eq!(mask_between_exclusive(1, 5, avm), 0b0000_0000_0000_0000_0000_0000_0000_1110);
 		assert_eq!(mask_between_inclusive(1, 5, avm), 0b0000_0000_0000_0000_0000_0000_0001_1111);
 	}
@@ -575,5 +1212,20 @@ mod test {
         assert_eq!(diagonal_cells(cell_index(4, 4, 9), 9), vec![cell_index(3, 3, 9), cell_index(3, 5, 9), cell_index(5, 3, 9), cell_index(5, 5, 9)]);
         assert_eq!(diagonal_cells(cell_index(8, 8, 9), 9), vec![cell_index(7, 7, 9)]);
         assert_eq!(diagonal_cells(80, 9), vec![70]);
+    }
+
+    #[test]
+    fn test_cell_names() {
+        assert_eq!(cell_index_name(0, 9), "r1c1");
+        assert_eq!(cell_index_name(40, 9), "r5c5");
+        assert_eq!(cell_index_name(80, 9), "r9c9");
+        assert_eq!(compact_name(&[], 9), "");
+        assert_eq!(compact_name(&[0], 9), "r1c1");
+        assert_eq!(compact_name(&[0,1,2], 9), "r1c123");
+        assert_eq!(compact_name(&[0,9,18], 9), "r123c1");
+        assert_eq!(compact_name(&[0,1,2,9,18], 9), "r123c1,r1c23");
+        assert_eq!(compact_name(&[0,10,20], 9), "r1c1,r2c2,r3c3");
+        assert_eq!(compact_name(&[0,10,20,21,22], 9), "r1c1,r2c2,r3c345");
+        assert_eq!(compact_name(&[0,10,20,29,38], 9), "r1c1,r2c2,r345c3");
     }
 }

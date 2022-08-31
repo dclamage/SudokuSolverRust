@@ -77,10 +77,10 @@ pub trait Constraint {
     ///
     /// Do not attempt to do any logic which isn't relevant to this constraint.
     ///
-    /// Any eliminations should be tracked and added to the [`LogicalStepDescs`] object if provided,
+    /// Any eliminations should be tracked and added to the [`LogicalStepDescList`] object if provided,
     /// along with a human readable description of why those eliminations occurred.
     ///
-    /// Eliminations do not need to be tracked if the [`LogicalStepDescs`] object is not provided.
+    /// Eliminations do not need to be tracked if the [`LogicalStepDescList`] object is not provided.
     ///
     /// Return the following based on the situation. You must track this yourself and return an accurate [`LogicResult`]:
     /// - [`LogicResult::None`] if the board is unchanged.

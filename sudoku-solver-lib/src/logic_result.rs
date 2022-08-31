@@ -1,7 +1,7 @@
-#[derive(PartialEq)]
+#[derive(Debug, PartialEq)]
 pub enum LogicResult {
     None,
     Changed,
     Invalid,
-    PuzzleComplete,
+    Complete,
 }

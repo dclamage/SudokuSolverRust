@@ -89,6 +89,11 @@ impl Board {
         self.get_cell_mask(cell) & value_mask(val) != 0
     }
 
+    pub fn has_candidate(&self, candidate: usize) -> bool {
+        let (cell, val) = candidate_index_to_cell_and_value(candidate, self.size());
+        self.cell_has_value(cell, val)
+    }
+
     pub fn clear_value(&mut self, cell: usize, val: usize) -> bool {
         self.board[cell] &= !value_mask(val);
         (self.board[cell] & CANDIDATES_MASK) != 0
@@ -101,7 +106,7 @@ impl Board {
         }
 
         // Check if already set
-        if self.board[cell] & val_mask != 0 {
+        if self.board[cell] & VALUE_SET_MASK != 0 {
             return false;
         }
 
@@ -175,7 +180,7 @@ impl BoardData {
             all_values_mask,
             houses,
             houses_by_cell,
-            weak_links: vec![BTreeSet::new(); num_cells],
+            weak_links: vec![BTreeSet::new(); num_candidates],
             total_weak_links: 0,
             constraints: constraints.to_vec(),
         }
@@ -313,5 +318,13 @@ impl BoardData {
             }
         }
         elims
+    }
+}
+
+impl Default for Board {
+    /// Create an empty board of size 9x9 with standard regions (boxes)
+    /// and no additional constraints.
+    fn default() -> Self {
+        Board::new(9, &[], &[])
     }
 }
