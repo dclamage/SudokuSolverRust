@@ -76,7 +76,7 @@ impl LogicalStepDescList {
     /// ```
     /// # use sudoku_solver_lib::logical_step_desc::LogicalStepDescList;
     /// let mut list = LogicalStepDescList::new();
-    /// list.add("step 1");
+    /// list.add_step("step 1");
     ///
     /// assert_eq!(list.len(), 1);
     /// assert_eq!(list.to_string(), "step 1");
@@ -138,7 +138,6 @@ impl LogicalStepDescList {
     /// //       | sub step b
     ///
     /// # assert_eq!(outer_list.to_string(), "outer step I\nouter step II\n  | step 1\n  | step 2\n      | sub step a\n      | sub step b");
-    /// ```
     /// ```
     pub fn add_step_with_substeps(&mut self, step: &str, sub_steps: &LogicalStepDescList) {
         self.steps.push(LogicalStepDesc::new(step, sub_steps));

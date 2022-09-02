@@ -7,3 +7,4 @@ pub mod logic_result;
 pub mod logical_step;
 pub mod logical_step_desc;
 pub mod solver;
+pub mod value_mask;

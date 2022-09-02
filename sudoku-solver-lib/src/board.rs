@@ -1,4 +1,7 @@
-use crate::{board_utility::*, constraint::Constraint, house::House, logic_result::LogicResult};
+use crate::{
+    board_utility::*, constraint::Constraint, house::House, logic_result::LogicResult,
+    value_mask::ValueMask,
+};
 use std::{
     collections::{BTreeSet, HashMap},
     sync::Arc,
@@ -6,7 +9,7 @@ use std::{
 
 #[derive(Clone)]
 pub struct Board {
-    board: Vec<u32>,
+    board: Vec<ValueMask>,
     data: Arc<BoardData>,
 }
 
@@ -15,7 +18,7 @@ pub struct BoardData {
     size: usize,
     num_cells: usize,
     num_candidates: usize,
-    all_values_mask: u32,
+    all_values_mask: ValueMask,
     houses: Vec<Arc<House>>,
     houses_by_cell: Vec<Vec<Arc<House>>>,
     weak_links: Vec<BTreeSet<usize>>,
@@ -57,7 +60,7 @@ impl Board {
         self.data.num_candidates
     }
 
-    pub fn all_values_mask(&self) -> u32 {
+    pub fn all_values_mask(&self) -> ValueMask {
         self.data.all_values_mask
     }
 
@@ -81,36 +84,33 @@ impl Board {
         &self.data.constraints
     }
 
-    pub fn get_cell_mask(&self, cell: usize) -> u32 {
+    pub fn cell(&self, cell: usize) -> ValueMask {
         self.board[cell]
-    }
-
-    pub fn cell_has_value(&self, cell: usize, val: usize) -> bool {
-        self.get_cell_mask(cell) & value_mask(val) != 0
     }
 
     pub fn has_candidate(&self, candidate: usize) -> bool {
         let (cell, val) = candidate_index_to_cell_and_value(candidate, self.size());
-        self.cell_has_value(cell, val)
+        self.cell(cell).has(val)
     }
 
     pub fn clear_value(&mut self, cell: usize, val: usize) -> bool {
-        self.board[cell] &= !value_mask(val);
-        (self.board[cell] & CANDIDATES_MASK) != 0
+        self.board[cell] = self.board[cell].without(val);
+        !self.board[cell].is_empty()
     }
 
-    pub fn set_value(&mut self, cell: usize, val: usize) -> bool {
-        let val_mask = value_mask(val);
-        if !self.cell_has_value(cell, val) {
+    pub fn set_solved(&mut self, cell: usize, val: usize) -> bool {
+        // Is this value possible?
+        if !self.cell(val).has(val) {
             return false;
         }
 
-        // Check if already set
-        if self.board[cell] & VALUE_SET_MASK != 0 {
+        // Check if already solved
+        if self.board[cell].is_solved() {
             return false;
         }
 
-        self.board[cell] = val_mask | VALUE_SET_MASK;
+        // Mark as solved
+        self.board[cell] = self.board[cell].with_only(val).solved();
 
         // Clone the BoardData Arc to avoid borrowing issues
         let board_data = self.data.clone();
@@ -135,18 +135,14 @@ impl Board {
         true
     }
 
-    pub fn set_mask(&mut self, cell: usize, mask: u32) -> bool {
-        if mask & CANDIDATES_MASK == 0 {
+    pub fn set_mask(&mut self, cell: usize, mask: ValueMask) -> bool {
+        assert!(!mask.is_solved());
+        if mask.is_empty() {
             return false;
         }
 
         self.board[cell] = mask;
         true
-    }
-
-    pub fn set_mask_from_values(&mut self, cell: usize, values: &[usize]) -> bool {
-        let mask = values_mask(values);
-        self.set_mask(cell, mask)
     }
 
     pub fn clear_candidate(&mut self, candidate: usize) -> bool {
@@ -167,7 +163,7 @@ impl Board {
 
 impl BoardData {
     pub fn new(size: usize, regions: &[usize], constraints: &[Arc<dyn Constraint>]) -> BoardData {
-        let all_values_mask = all_values_mask(size);
+        let all_values_mask = ValueMask::from_all_values(size);
         let num_cells = size * size;
         let num_candidates = size * num_cells;
         let houses = Self::create_houses(size, regions, constraints);

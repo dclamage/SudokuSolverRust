@@ -120,8 +120,8 @@ pub trait Constraint {
         let mut result = Vec::new();
 
         for &cell in cells {
-            let mask = board.get_cell_mask(cell);
-            if value_count(mask) <= 1 || !has_value(mask, value) {
+            let mask = board.cell(cell);
+            if mask.is_single() || !mask.has(value) {
                 continue;
             }
 
@@ -196,16 +196,16 @@ pub trait Constraint {
         let mut result = Vec::new();
 
         for &cell in cells {
-            let orig_mask = board.get_cell_mask(cell);
-            if value_count(orig_mask) <= 1 {
+            let orig_mask = board.cell(cell);
+            if orig_mask.is_single() {
                 continue;
             }
 
-            for val in values_from_mask(orig_mask) {
+            for val in orig_mask {
                 let cand0 = candidate_index(cell, val, size);
 
                 let mut board_clone = board.clone();
-                if !board_clone.set_value(cell, val) {
+                if !board_clone.set_solved(cell, val) {
                     // A weak link to self indicates that the candidate is generally invalid
                     result.push((cand0, cand0));
                     continue;
@@ -227,11 +227,11 @@ pub trait Constraint {
                         continue;
                     }
 
-                    let orig_mask1 = board.get_cell_mask(cell1) & CANDIDATES_MASK;
-                    let new_mask1 = board_clone.get_cell_mask(cell1) & CANDIDATES_MASK;
+                    let orig_mask1 = board.cell(cell1).unsolved();
+                    let new_mask1 = board_clone.cell(cell1).unsolved();
                     if orig_mask1 != new_mask1 {
                         let diff_mask = orig_mask1 & !new_mask1;
-                        for val1 in values_from_mask(diff_mask) {
+                        for val1 in diff_mask {
                             let cand1 = candidate_index(cell1, val1, size);
                             result.push((cand0, cand1));
                         }
