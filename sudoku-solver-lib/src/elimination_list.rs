@@ -108,6 +108,11 @@ impl EliminationList {
         self.candidates.len()
     }
 
+    /// Get if the elimination list is empty.
+    pub fn is_empty(&self) -> bool {
+        self.candidates.is_empty()
+    }
+
     /// Get the candidates in the elimination list.
     pub fn candidates(&self) -> &BTreeSet<CandidateIndex> {
         &self.candidates
@@ -170,6 +175,12 @@ impl EliminationList {
         }
 
         result
+    }
+}
+
+impl Default for EliminationList {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

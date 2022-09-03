@@ -28,7 +28,7 @@ pub trait Constraint {
     /// Override if there is a more specific name for this constraint instance,
     /// such as "Killer Cage at r1c1".
     fn specific_name(&self) -> String {
-        self.name().to_string()
+        self.name()
     }
 
     /// Called once passing in the [`Board`] so the constaint can initialize itself based
@@ -130,7 +130,7 @@ pub trait Constraint {
             result.push(cell);
         }
 
-        if result.len() > 0 {
+        if !result.is_empty() {
             let mut board_clone = board.clone();
             for &cell in &result {
                 board_clone.clear_value(cell, value);

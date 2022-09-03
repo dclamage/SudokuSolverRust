@@ -7,7 +7,7 @@
 /// * Changed: A change to the board.
 /// * Invalid: A contradiction was found. Do not try to continue solving.
 /// * Solved: The board is solved.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum LogicResult {
     None,
     Changed,

@@ -691,6 +691,12 @@ impl ValueMask {
     }
 }
 
+impl Default for ValueMask {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl fmt::Display for ValueMask {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut first = true;

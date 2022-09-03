@@ -45,7 +45,7 @@ impl LogicalStepDesc {
 impl Display for LogicalStepDesc {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         let indent = self.indent_str();
-        if self.sub_steps.len() == 0 {
+        if self.sub_steps.is_empty() {
             write!(f, "{}{}", indent, self.step)
         } else {
             writeln!(f, "{}{}", indent, self.step)?;
@@ -77,6 +77,11 @@ impl LogicalStepDescList {
     /// Gets the number of logical steps in the list.
     pub fn len(&self) -> usize {
         self.steps.len()
+    }
+
+    /// Checks if there are no logical steps in the list.
+    pub fn is_empty(&self) -> bool {
+        self.steps.is_empty()
     }
 
     /// Add a logical step to the list with no sub-steps.
@@ -199,13 +204,21 @@ impl LogicalStepDescList {
     }
 }
 
+impl Default for LogicalStepDescList {
+    fn default() -> Self {
+        LogicalStepDescList::new()
+    }
+}
+
 impl Display for LogicalStepDescList {
     /// Display a logical step description list.
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        let mut full_desc = String::new();
-        for step in &self.steps {
-            full_desc.push_str(&format!("{}\n", step));
+        for step in self.steps.iter().take(self.steps.len() - 1) {
+            writeln!(f, "{}", step)?;
         }
-        write!(f, "{}", full_desc.trim_end())
+        if let Some(last_step) = self.steps.last() {
+            write!(f, "{}", last_step)?;
+        }
+        Ok(())
     }
 }

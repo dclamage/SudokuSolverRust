@@ -484,7 +484,7 @@ impl CellUtility {
                     .iter()
                     .map(|cell| cell.1 + 1)
                     .sorted()
-                    .join(&cell_separator)
+                    .join(cell_separator)
             );
         }
 
@@ -497,16 +497,16 @@ impl CellUtility {
                     .iter()
                     .map(|cell| cell.0 + 1)
                     .sorted()
-                    .join(&cell_separator),
+                    .join(cell_separator),
                 cells[0].1 + 1
             );
         }
 
         // More complex case that spans rows and cols
         let grouped_by_row =
-            self.compact_name_grouped_by_row(&cells, &cell_separator, &group_separator);
+            self.compact_name_grouped_by_row(&cells, cell_separator, group_separator);
         let grouped_by_col =
-            self.compact_name_grouped_by_col(&cells, &cell_separator, &group_separator);
+            self.compact_name_grouped_by_col(&cells, cell_separator, group_separator);
 
         if grouped_by_row.len() < grouped_by_col.len() {
             grouped_by_row
@@ -527,13 +527,13 @@ impl CellUtility {
         for cell in cells {
             cols_per_row[cell.0].push(cell.1 + 1);
         }
-        for i in 0..size {
-            cols_per_row[i].sort();
+        for cols in &mut cols_per_row {
+            cols.sort();
         }
 
         let mut groups: Vec<String> = Vec::new();
         for i in 0..size {
-            if cols_per_row[i].len() == 0 {
+            if cols_per_row[i].is_empty() {
                 continue;
             }
 
@@ -552,7 +552,7 @@ impl CellUtility {
             ));
         }
 
-        groups.join(&group_separator)
+        groups.join(group_separator)
     }
 
     // Used by compact_name
@@ -567,13 +567,13 @@ impl CellUtility {
         for cell in cells {
             rows_per_col[cell.1].push(cell.0 + 1);
         }
-        for i in 0..size {
-            rows_per_col[i].sort();
+        for rows in &mut rows_per_col {
+            rows.sort();
         }
 
         let mut groups: Vec<String> = Vec::new();
         for i in 0..size {
-            if rows_per_col[i].len() == 0 {
+            if rows_per_col[i].is_empty() {
                 continue;
             }
 
@@ -587,12 +587,12 @@ impl CellUtility {
 
             groups.push(format!(
                 "r{}c{}",
-                rows_per_col[i].iter().join(&cell_separator),
-                cols_in_group.iter().join(&cell_separator)
+                rows_per_col[i].iter().join(cell_separator),
+                cols_in_group.iter().join(cell_separator)
             ));
         }
 
-        groups.join(&group_separator)
+        groups.join(group_separator)
     }
 }
 
