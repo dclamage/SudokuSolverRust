@@ -154,13 +154,14 @@ impl LogicalStepDescList {
     /// ```
     /// # use sudoku_solver_lib::logical_step_desc::LogicalStepDescList;
     /// # use sudoku_solver_lib::elimination_list::EliminationList;
+    /// # use sudoku_solver_lib::cell_utility::CellUtility;
     /// // Assume 9x9 board.
-    /// let mut size = 9;
+    /// let cu = CellUtility::new(9);
     ///
     /// // Create an elimination list which elimiates 1r1c1 and 1r1c2.
-    /// let mut elims = EliminationList::new(size);
-    /// elims.add_row_col_value(0, 0, 1);
-    /// elims.add_row_col_value(0, 1, 1);
+    /// let mut elims = EliminationList::new();
+    /// elims.add(cu.cell(0, 0).candidate(1));
+    /// elims.add(cu.cell(0, 1).candidate(1));
     ///
     /// // Create a logical step description list.
     /// let mut list = LogicalStepDescList::new();

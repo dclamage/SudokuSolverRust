@@ -1,5 +1,6 @@
 use crate::{
-    board_utility::*, constraint::Constraint, house::House, logic_result::LogicResult,
+    candidate_index::CandidateIndex, cell_index::CellIndex, cell_utility::CellUtility,
+    constraint::Constraint, house::House, logic_result::LogicResult, math::*,
     value_mask::ValueMask,
 };
 use std::{
@@ -21,7 +22,7 @@ pub struct BoardData {
     all_values_mask: ValueMask,
     houses: Vec<Arc<House>>,
     houses_by_cell: Vec<Vec<Arc<House>>>,
-    weak_links: Vec<BTreeSet<usize>>,
+    weak_links: Vec<BTreeSet<CandidateIndex>>,
     total_weak_links: usize,
     constraints: Vec<Arc<dyn Constraint>>,
 }
@@ -68,15 +69,15 @@ impl Board {
         &self.data.houses
     }
 
-    pub fn houses_for_cell(&self, cell: usize) -> &[Arc<House>] {
-        &self.data.houses_by_cell[cell]
+    pub fn houses_for_cell(&self, cell: CellIndex) -> &[Arc<House>] {
+        &self.data.houses_by_cell[cell.index()]
     }
 
     pub fn total_weak_links(&self) -> usize {
         self.data.total_weak_links
     }
 
-    pub fn weak_links(&self) -> &[BTreeSet<usize>] {
+    pub fn weak_links(&self) -> &[BTreeSet<CandidateIndex>] {
         &self.data.weak_links
     }
 
@@ -84,43 +85,58 @@ impl Board {
         &self.data.constraints
     }
 
-    pub fn cell(&self, cell: usize) -> ValueMask {
-        self.board[cell]
+    pub fn cell(&self, cell: CellIndex) -> ValueMask {
+        self.board[cell.index()]
     }
 
-    pub fn has_candidate(&self, candidate: usize) -> bool {
-        let (cell, val) = candidate_index_to_cell_and_value(candidate, self.size());
+    pub fn has_candidate(&self, candidate: CandidateIndex) -> bool {
+        let (cell, val) = candidate.cell_index_and_value();
         self.cell(cell).has(val)
     }
 
-    pub fn clear_value(&mut self, cell: usize, val: usize) -> bool {
+    pub fn clear_value(&mut self, cell: CellIndex, val: usize) -> bool {
+        let cell = cell.index();
         self.board[cell] = self.board[cell].without(val);
         !self.board[cell].is_empty()
     }
 
-    pub fn set_solved(&mut self, cell: usize, val: usize) -> bool {
+    pub fn clear_candidate(&mut self, candidate: CandidateIndex) -> bool {
+        let (cell, val) = candidate.cell_index_and_value();
+        self.clear_value(cell, val)
+    }
+
+    pub fn clear_candidates(&mut self, candidates: &[CandidateIndex]) -> bool {
+        let mut valid = true;
+        for candidate in candidates {
+            if !self.clear_candidate(*candidate) {
+                valid = false;
+            }
+        }
+        valid
+    }
+
+    pub fn set_solved(&mut self, cell: CellIndex, val: usize) -> bool {
         // Is this value possible?
-        if !self.cell(val).has(val) {
+        if !self.cell(cell).has(val) {
             return false;
         }
 
         // Check if already solved
-        if self.board[cell].is_solved() {
+        if self.board[cell.index()].is_solved() {
             return false;
         }
 
         // Mark as solved
-        self.board[cell] = self.board[cell].with_only(val).solved();
+        self.board[cell.index()] = self.board[cell.index()].with_only(val).solved();
 
         // Clone the BoardData Arc to avoid borrowing issues
         let board_data = self.data.clone();
 
         // Apply all weak links
-        let set_candidate_index = candidate_index(cell, val, self.size());
-        for &elim_candidate_index in board_data.weak_links[set_candidate_index].iter() {
-            let (elim_candidate_cell, elim_candidate_val) =
-                candidate_index_to_cell_and_value(elim_candidate_index, self.size());
-            if !self.clear_value(elim_candidate_cell, elim_candidate_val) {
+        let cu = CellUtility::new(self.size());
+        let set_candidate_index = cu.candidate(cell, val);
+        for &elim_candidate_index in board_data.weak_links[set_candidate_index.index()].iter() {
+            if !self.clear_candidate(elim_candidate_index) {
                 return false;
             }
         }
@@ -143,21 +159,6 @@ impl Board {
 
         self.board[cell] = mask;
         true
-    }
-
-    pub fn clear_candidate(&mut self, candidate: usize) -> bool {
-        let (cell, val) = candidate_index_to_cell_and_value(candidate, self.size());
-        self.clear_value(cell, val)
-    }
-
-    pub fn clear_candidates(&mut self, candidates: &[usize]) -> bool {
-        let mut valid = true;
-        for candidate in candidates {
-            if !self.clear_candidate(*candidate) {
-                valid = false;
-            }
-        }
-        valid
     }
 }
 
@@ -187,6 +188,7 @@ impl BoardData {
         regions: &[usize],
         constraints: &[Arc<dyn Constraint>],
     ) -> Vec<Arc<House>> {
+        let cu = CellUtility::new(size);
         let num_cells = size * size;
         let regions = if regions.len() == num_cells {
             regions.to_vec()
@@ -201,7 +203,7 @@ impl BoardData {
             let name = format!("Row {}", row + 1);
             let mut house = Vec::new();
             for col in 0..size {
-                let cell = cell_index(row, col, size);
+                let cell = cu.cell(row, col);
                 house.push(cell);
             }
             houses.push(Arc::new(House::new(&name, &house)));
@@ -212,16 +214,16 @@ impl BoardData {
             let name = format!("Column {}", col + 1);
             let mut house = Vec::new();
             for row in 0..size {
-                let cell = cell_index(row, col, size);
+                let cell = cu.cell(row, col);
                 house.push(cell);
             }
             houses.push(Arc::new(House::new(&name, &house)));
         }
 
         // Create a house for each region
-        let mut house_for_region: HashMap<usize, Vec<usize>> = HashMap::new();
-        for cell in 0..num_cells {
-            let region = regions[cell];
+        let mut house_for_region: HashMap<usize, Vec<CellIndex>> = HashMap::new();
+        for cell in cu.all_cells() {
+            let region = regions[cell.index()];
             let house = house_for_region.entry(region).or_insert(Vec::new());
             house.push(cell);
         }
@@ -258,51 +260,50 @@ impl BoardData {
         }
         for house in houses {
             for cell in house.cells().iter() {
-                houses_by_cell[*cell].push(house.clone());
+                houses_by_cell[cell.index()].push(house.clone());
             }
         }
         houses_by_cell
     }
 
-    fn add_weak_link(&mut self, candidate0: usize, candidate1: usize) {
-        if self.weak_links[candidate0].insert(candidate1) {
+    fn add_weak_link(&mut self, candidate1: CandidateIndex, candidate2: CandidateIndex) {
+        if self.weak_links[candidate1.index()].insert(candidate2) {
             self.total_weak_links += 1;
         }
-        if self.weak_links[candidate1].insert(candidate0) {
+        if self.weak_links[candidate2.index()].insert(candidate1) {
             self.total_weak_links += 1;
         }
     }
 
-    fn init_weak_links(&mut self) -> Vec<usize> {
+    fn init_weak_links(&mut self) -> Vec<CandidateIndex> {
         self.init_sudoku_weak_links();
         self.init_constraint_weak_links()
     }
 
     fn init_sudoku_weak_links(&mut self) {
         let size = self.size;
+        let cu = CellUtility::new(size);
 
-        for cell in 0..self.num_cells {
-            for val in 1..=size {
-                let candidate_index1 = candidate_index(cell, val, size);
+        for candidate1 in cu.all_candidates() {
+            let (cell1, val1) = candidate1.cell_index_and_value();
 
-                // Add a weak link to every other candidate in the same cell
-                for val2 in (val + 1)..=size {
-                    let candidate_index2 = candidate_index(cell, val2, size);
-                    self.add_weak_link(candidate_index1, candidate_index2);
-                }
+            // Add a weak link to every other candidate in the same cell
+            for val2 in (val1 + 1)..=size {
+                let candidate2 = cu.candidate(cell1, val2);
+                self.add_weak_link(candidate1, candidate2);
+            }
 
-                // Add a weak link to every other candidate with the same value that shares a house
-                for house in self.houses_by_cell[cell].clone() {
-                    for (cand0, cand1) in get_candidate_pairs(size, house.cells()) {
-                        self.add_weak_link(cand0, cand1);
-                    }
+            // Add a weak link to every other candidate with the same value that shares a house
+            for house in self.houses_by_cell[cell1.index()].clone() {
+                for (cand0, cand1) in cu.candidate_pairs(house.cells()) {
+                    self.add_weak_link(cand0, cand1);
                 }
             }
         }
     }
 
-    fn init_constraint_weak_links(&mut self) -> Vec<usize> {
-        let mut elims: Vec<usize> = Vec::new();
+    fn init_constraint_weak_links(&mut self) -> Vec<CandidateIndex> {
+        let mut elims: Vec<CandidateIndex> = Vec::new();
         for constraint in self.constraints.clone() {
             let weak_links = constraint.get_weak_links(self.size);
             for (candidate0, candidate1) in weak_links {

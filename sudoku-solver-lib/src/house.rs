@@ -1,3 +1,5 @@
+use crate::cell_index::CellIndex;
+
 /// A *house* is a group of N cells where N is the size of the board where
 /// digits cannot repeat within that group.
 ///
@@ -15,12 +17,12 @@
 #[derive(Debug, Clone)]
 pub struct House {
     name: String,
-    cells: Vec<usize>,
+    cells: Vec<CellIndex>,
 }
 
 impl House {
     /// Create a new house with the given name and cells.
-    pub fn new(name: &str, cells: &[usize]) -> House {
+    pub fn new(name: &str, cells: &[CellIndex]) -> House {
         let mut cells = cells.to_vec();
         cells.sort();
 
@@ -36,7 +38,7 @@ impl House {
     }
 
     /// Get the cells that make up the house.
-    pub fn cells(&self) -> &Vec<usize> {
+    pub fn cells(&self) -> &Vec<CellIndex> {
         &self.cells
     }
 }

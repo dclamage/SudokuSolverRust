@@ -1,5 +1,6 @@
 use crate::board::Board;
-use crate::board_utility::*;
+use crate::candidate_index::CandidateIndex;
+use crate::cell_index::CellIndex;
 use crate::house::House;
 use crate::logic_result::LogicResult;
 use crate::logical_step_desc::LogicalStepDescList;
@@ -61,7 +62,7 @@ pub trait Constraint {
     /// - [`LogicResult::None`] if the constraint is not violated.
     /// - [`LogicResult::Invalid`] if the constraint is violated.
     /// - All other values are treated as [`LogicResult::None`].
-    fn enforce(&self, _board: &Board, _cell: usize, _val: usize) -> LogicResult {
+    fn enforce(&self, _board: &Board, _cell: CellIndex, _val: usize) -> LogicResult {
         LogicResult::None
     }
 
@@ -96,12 +97,12 @@ pub trait Constraint {
         LogicResult::None
     }
 
-    /// Return a [`Vec`] of cell indices which must contain the given value.
+    /// Return a vector of cells which must contain the given value.
     ///
     /// For example, a Killer Cage may determine that there must be a 9 in one of the cells
     /// in order to fulfill the sum. This would return a [`Vec`] of all the cells in the cage
     /// which can still be 9.
-    fn cells_must_contain(&self, _board: &Board, _val: usize) -> Vec<usize> {
+    fn cells_must_contain(&self, _board: &Board, _val: usize) -> Vec<CellIndex> {
         Vec::new()
     }
 
@@ -114,9 +115,9 @@ pub trait Constraint {
     fn cells_must_contain_by_running_logic(
         &self,
         board: &mut Board,
-        cells: &[usize],
+        cells: &[CellIndex],
         value: usize,
-    ) -> Vec<usize> {
+    ) -> Vec<CellIndex> {
         let mut result = Vec::new();
 
         for &cell in cells {
@@ -156,8 +157,6 @@ pub trait Constraint {
     /// are assumed to be symmetrical, so if `A → !B` then `B → !A`, so only `(A, B)` or `(B, A)`
     /// is necessary to include, not both. It is not harmful to include both, however.
     ///
-    /// Use [`candidate_index`] to calculate the candidate index of a value within a cell.
-    ///
     /// For example, a nonconsecutive constraint would return that the candidate 1 in r1c1 has
     /// a weak link to the candidate 2 in r1c2 (among others).
     ///
@@ -175,10 +174,10 @@ pub trait Constraint {
     /// to check if a cell has only `1,2` left, which elimiates `1,2` from adjacent cells. The solver
     /// will figure this out itself via cell forcing.
     ///
-    /// [`get_candidate_pairs`] is especially useful for this method, which generates all candidates
+    /// [`crate::cell_utility::CellUtility::candidate_pairs`] is especially useful for this method, which generates all candidates
     /// pairs for all values within a group of cells. Passing in a group of cells which cannot
     /// repeat will generate the needed weak link pairs for that group.
-    fn get_weak_links(&self, _size: usize) -> Vec<(usize, usize)> {
+    fn get_weak_links(&self, _size: usize) -> Vec<(CandidateIndex, CandidateIndex)> {
         Vec::new()
     }
 
@@ -190,9 +189,8 @@ pub trait Constraint {
     fn get_weak_links_by_running_logic(
         &self,
         board: &Board,
-        cells: &[usize],
-    ) -> Vec<(usize, usize)> {
-        let size = board.size();
+        cells: &[CellIndex],
+    ) -> Vec<(CandidateIndex, CandidateIndex)> {
         let mut result = Vec::new();
 
         for &cell in cells {
@@ -202,7 +200,7 @@ pub trait Constraint {
             }
 
             for val in orig_mask {
-                let cand0 = candidate_index(cell, val, size);
+                let cand0 = cell.candidate(val);
 
                 let mut board_clone = board.clone();
                 if !board_clone.set_solved(cell, val) {
@@ -232,7 +230,7 @@ pub trait Constraint {
                     if orig_mask1 != new_mask1 {
                         let diff_mask = orig_mask1 & !new_mask1;
                         for val1 in diff_mask {
-                            let cand1 = candidate_index(cell1, val1, size);
+                            let cand1 = cell1.candidate(val1);
                             result.push((cand0, cand1));
                         }
                     }

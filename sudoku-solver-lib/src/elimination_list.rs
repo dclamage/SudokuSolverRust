@@ -1,6 +1,9 @@
 use itertools::Itertools;
 
-use crate::{board::Board, board_utility::*, logic_result::LogicResult};
+use crate::{
+    board::Board, candidate_index::CandidateIndex, cell_index::CellIndex,
+    cell_utility::CellUtility, logic_result::LogicResult,
+};
 use std::{collections::BTreeSet, fmt::Display};
 
 /// A utility struct for storing a list of eliminated candidates.
@@ -11,54 +14,29 @@ use std::{collections::BTreeSet, fmt::Display};
 /// eliminated candidates.
 #[derive(Clone)]
 pub struct EliminationList {
-    candidates: BTreeSet<usize>,
-    board_size: usize,
+    candidates: BTreeSet<CandidateIndex>,
 }
 
 impl EliminationList {
     /// Create a new empty elimination list.
-    ///
-    /// # Arguments
-    /// - `board_size` - The size of the board.
-    ///
-    /// # Example
-    /// ```
-    /// # use sudoku_solver_lib::elimination_list::EliminationList;
-    /// // Create an empty elimination list with a board size of 9x9.
-    /// let elims = EliminationList::new(9);
-    /// ```
-    pub fn new(board_size: usize) -> EliminationList {
+    pub fn new() -> EliminationList {
         EliminationList {
             candidates: BTreeSet::new(),
-            board_size,
         }
     }
 
     /// Add a candidate to the elimination list.
     ///
-    /// # Arguments
-    /// - `candidate` - The candidate to add to the elimination list.
-    ///
     /// # Example
     /// ```
     /// # use sudoku_solver_lib::elimination_list::EliminationList;
-    /// # use sudoku_solver_lib::board_utility::*;
+    /// # use sudoku_solver_lib::cell_utility::CellUtility;
     /// // Create an empty elimination list with a board size of 9x9.
-    /// let size = 9;
-    /// let mut elims = EliminationList::new(size);
+    /// let cu = CellUtility::new(9);
+    /// let mut elims = EliminationList::new();
     ///
     /// // Add candidate 3r4c5 to the elimination list.
-    ///
-    /// // Rows and cols are 0 indexed.
-    /// let row = 3;
-    /// let col = 4;
-    ///
-    /// // Values are 1 indexed.
-    /// let val = 3;
-    ///
-    /// // Compute the candidate index
-    /// let cell = cell_index(row, col, size);
-    /// let candidate = candidate_index(cell, val, size);
+    /// let candidate = cu.candidate(cu.cell(3, 4), 3);
     ///
     /// // Add the candidate to the elimination list.
     /// elims.add(candidate);
@@ -67,114 +45,59 @@ impl EliminationList {
     /// let desc = elims.to_string();
     /// assert_eq!(desc, "-3r4c5");
     /// ```
-    pub fn add(&mut self, candidate: usize) {
+    pub fn add(&mut self, candidate: CandidateIndex) {
         self.candidates.insert(candidate);
     }
 
     /// Add all candidates to the elimination list.
     ///
-    /// # Arguments
-    /// - `candidates` - The candidates to add to the elimination list.
-    ///
     /// # Example
     /// ```
     /// # use sudoku_solver_lib::elimination_list::EliminationList;
-    /// # use sudoku_solver_lib::board_utility::*;
+    /// # use sudoku_solver_lib::cell_utility::CellUtility;
     /// // Create an empty elimination list with a board size of 9x9.
-    /// let size = 9;
-    /// let mut elims = EliminationList::new(size);
+    /// let cu = CellUtility::new(9);
+    /// let mut elims = EliminationList::new();
     ///
     /// // Add candidates 1r1c1, 3r4c5, and 3r4c6 to the elimination list.
-    /// let candidate1 = candidate_index(cell_index(0, 0, size), 1, size);
-    /// let candidate2 = candidate_index(cell_index(3, 4, size), 3, size);
-    /// let candidate3 = candidate_index(cell_index(3, 5, size), 3, size);
+    /// let candidate1 = cu.cell(0, 0).candidate(1);
+    /// let candidate2 = cu.cell(3, 4).candidate(3);
+    /// let candidate3 = cu.cell(3, 5).candidate(3);
     /// elims.add_all(&[candidate1, candidate2, candidate3]);
     ///
     /// // Describe the eliminations
     /// let desc = elims.to_string();
     /// assert_eq!(desc, "-1r1c1;-3r4c56");
     /// ```
-    /// elims.add_all(&[0, 3 * 9 + 4, 5 * 9 + 8]);
-    pub fn add_all(&mut self, candidates: &[usize]) {
+    pub fn add_all(&mut self, candidates: &[CandidateIndex]) {
         self.candidates.extend(candidates.iter());
     }
 
     /// Add a candidate to the elimination list by cell index and value.
     ///
-    /// # Arguments
-    /// - `cell` - The cell index.
-    /// - `val` - The value.
-    ///
     /// # Example
     /// ```
     /// # use sudoku_solver_lib::elimination_list::EliminationList;
-    /// # use sudoku_solver_lib::board_utility::*;
+    /// # use sudoku_solver_lib::cell_utility::CellUtility;
     /// // Create an empty elimination list with a board size of 9x9.
-    /// let size = 9;
-    /// let mut elims = EliminationList::new(size);
-    ///
-    /// // Add candidate 3r4c5 to the elimination list.
-    ///
-    /// // Rows and cols are 0 indexed.
-    /// let row = 3;
-    /// let col = 4;
-    ///
-    /// // Values are 1 indexed.
-    /// let val = 3;
-    ///
-    /// // Compute the candidate index
-    /// let cell = cell_index(row, col, size);
+    /// let cu = CellUtility::new(9);
+    /// let mut elims = EliminationList::new();
     ///
     /// // Add the candidate to the elimination list.
-    /// elims.add_cell_value(cell, val);
+    /// elims.add_cell_value(cu.cell(3, 4), 3);
     ///
     /// // Describe the eliminations
     /// let desc = elims.to_string();
     /// assert_eq!(desc, "-3r4c5");
     /// ```
-    pub fn add_cell_value(&mut self, cell: usize, val: usize) {
-        self.add(candidate_index(cell, val, self.board_size));
-    }
-
-    /// Add a candidate to the elimination list by row, column, and value.
-    ///
-    /// # Arguments
-    /// - `row` - The row index.
-    /// - `col` - The column index.
-    /// - `val` - The value.
-    ///
-    /// # Example
-    /// ```
-    /// # use sudoku_solver_lib::elimination_list::EliminationList;
-    /// # use sudoku_solver_lib::board_utility::*;
-    /// // Create an empty elimination list with a board size of 9x9.
-    /// let size = 9;
-    /// let mut elims = EliminationList::new(size);
-    ///
-    /// // Add candidate 3r4c5 to the elimination list.
-    ///
-    /// // Rows and cols are 0 indexed.
-    /// let row = 3;
-    /// let col = 4;
-    ///
-    /// // Values are 1 indexed.
-    /// let val = 3;
-    ///
-    /// // Add the candidate to the elimination list.
-    /// elims.add_row_col_value(row, col, val);
-    ///
-    /// // Describe the eliminations
-    /// let desc = elims.to_string();
-    /// assert_eq!(desc, "-3r4c5");
-    /// ```
-    pub fn add_row_col_value(&mut self, row: usize, col: usize, val: usize) {
-        self.add_cell_value(cell_index(row, col, self.board_size), val);
+    pub fn add_cell_value(&mut self, cell: CellIndex, value: usize) {
+        self.add(cell.candidate(value));
     }
 
     /// Remove a candidate from the elimination list.
     /// Returns true if the candidate was removed, false if it was not in the list.
     /// If the candidate was not in the list, this function does nothing.
-    pub fn remove(&mut self, candidate: usize) -> bool {
+    pub fn remove(&mut self, candidate: CandidateIndex) -> bool {
         self.candidates.remove(&candidate)
     }
 
@@ -184,14 +107,11 @@ impl EliminationList {
     }
 
     /// Get the candidates in the elimination list.
-    pub fn candidates(&self) -> &BTreeSet<usize> {
+    pub fn candidates(&self) -> &BTreeSet<CandidateIndex> {
         &self.candidates
     }
 
     /// Execute the eliminations on a [`Board`].
-    ///
-    /// # Arguments
-    /// - `board` - The [`Board`] to execute the eliminations on.
     ///
     /// # Returns
     /// - [`LogicResult`] - The result of the eliminations.
@@ -199,7 +119,7 @@ impl EliminationList {
     /// # Example
     /// ```
     /// # use sudoku_solver_lib::elimination_list::EliminationList;
-    /// # use sudoku_solver_lib::board_utility::*;
+    /// # use sudoku_solver_lib::cell_utility::CellUtility;
     /// # use sudoku_solver_lib::board::Board;
     /// # use sudoku_solver_lib::logic_result::LogicResult;
     /// // Create a default board.
@@ -207,12 +127,13 @@ impl EliminationList {
     ///
     /// // Create an empty elimination list.
     /// let size = board.size();
-    /// let mut elims = EliminationList::new(size);
+    /// let cu = CellUtility::new(size);
+    /// let mut elims = EliminationList::new();
     ///
     /// // Add candidates 1r1c1, 3r4c5, and 3r4c6 to the elimination list.
-    /// let candidate1 = candidate_index(cell_index(0, 0, size), 1, size);
-    /// let candidate2 = candidate_index(cell_index(3, 4, size), 3, size);
-    /// let candidate3 = candidate_index(cell_index(3, 5, size), 3, size);
+    /// let candidate1 = cu.cell(0, 0).candidate(1);
+    /// let candidate2 = cu.cell(3, 4).candidate(3);
+    /// let candidate3 = cu.cell(3, 5).candidate(3);
     /// elims.add_all(&[candidate1, candidate2, candidate3]);
     ///
     /// // Perform the eliminations.
@@ -226,7 +147,7 @@ impl EliminationList {
     ///
     /// // Eliminate all candidates from r1c1 - this will make the board invalid.
     /// for val in 1..=9 {
-    /// 	let candidate = candidate_index(cell_index(0, 0, size), val, size);
+    /// 	let candidate = cu.cell(0, 0).candidate(val);
     /// 	elims.add(candidate);
     /// }
     /// let result = elims.execute(&mut board);
@@ -234,9 +155,9 @@ impl EliminationList {
     /// ```
     pub fn execute(&self, board: &mut Board) -> LogicResult {
         let mut result = LogicResult::None;
-        for candidate in self.candidates.iter() {
-            if board.has_candidate(*candidate) {
-                if board.clear_candidate(*candidate) {
+        for &candidate in self.candidates.iter() {
+            if board.has_candidate(candidate) {
+                if board.clear_candidate(candidate) {
                     if result == LogicResult::None {
                         result = LogicResult::Changed;
                     }
@@ -258,26 +179,28 @@ impl Display for EliminationList {
     /// - `1r1c1, 1r1c2, 1r1c3`: `"-1r1c123"`
     /// - `1r1c1, 2r1c1, 2r2c1`: `"-1r1c1;-2r12c1"`
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let mut elims_by_value: Vec<Vec<usize>> = vec![vec![]; self.board_size];
-        for &candidate in self.candidates.iter() {
-            let (cell, value) = candidate_index_to_cell_and_value(candidate, self.board_size);
-            elims_by_value[value - 1].push(cell);
-        }
-
-        let mut descs: Vec<String> = Vec::new();
-        for val in 1..=self.board_size {
-            if !elims_by_value[val - 1].is_empty() {
-                elims_by_value[val - 1].sort();
-                let cur_desc = format!(
-                    "-{}{}",
-                    val,
-                    compact_name(&elims_by_value[val - 1], self.board_size)
-                );
-                descs.push(cur_desc);
+        if self.candidates.is_empty() {
+            write!(f, "No eliminations")
+        } else {
+            let board_size = self.candidates.iter().next().unwrap().size();
+            let cu = CellUtility::new(board_size);
+            let mut elims_by_value: Vec<Vec<CellIndex>> = vec![vec![]; board_size];
+            for &candidate in self.candidates.iter() {
+                let (cell, value) = candidate.cell_index_and_value();
+                elims_by_value[value - 1].push(cell);
             }
-        }
 
-        let desc = descs.iter().join(";");
-        write!(f, "{}", desc)
+            let mut descs: Vec<String> = Vec::new();
+            for val in 1..=board_size {
+                if !elims_by_value[val - 1].is_empty() {
+                    elims_by_value[val - 1].sort();
+                    let cur_desc = format!("-{}{}", val, cu.compact_name(&elims_by_value[val - 1]));
+                    descs.push(cur_desc);
+                }
+            }
+
+            let desc = descs.iter().join(";");
+            write!(f, "{}", desc)
+        }
     }
 }
