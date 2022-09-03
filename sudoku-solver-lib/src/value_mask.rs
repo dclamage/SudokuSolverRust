@@ -1,25 +1,25 @@
-//! A mask of possible values for a cell.
-//!
-//! This is a N-bit mask, where each bit represents a possible value for a cell and N
-//! is the NxN size of the grid.
-//!
-//! The mask is represented as a u32, where the least significant bit represents the
-//! value 1, the next bit represents the value 2, and so on.
-//!
-//! For example, a mask of 0b11 represents the values 1
-//! and 2.
-//!
-//! The top bit of the mask represents whether the cell has been "solved".
-//! A "solved" cell has one single value and all the consequences of that value have
-//! been applied to the board.  For example, if a cell has a value of 1, then all
-//! other cells in the same row, column, and box have had 1 removed as a possible
-//! value.
-//!
-//! VALUE_SET_MASK is the mask for the top bit.
-//! CANDIDATES_MASK is the mask for all the candidate bits (!VALUE_SET_MASK).
+//! Contains the [`ValueMask`] struct for representing the values possible in a cell.
 
 use std::{fmt, ops::*};
 
+/// A mask of possible values for a cell.
+///
+/// This is a N-bit mask, where each bit represents a possible value for a cell and N
+/// is the NxN size of the grid.
+///
+/// The mask is represented as a `u32`, where the least significant bit represents the
+/// value `1`, the next bit represents the value `2`, and so on.
+///
+/// For example, a mask of `0b1011` represents the values `1`, `2`, and `4`.
+///
+/// The top bit of the mask represents whether the cell has been "solved".
+/// A "solved" cell has one single value and all the consequences of that value have
+/// been applied to the board. For example, if a cell has a value of `1` and has been
+/// marked as solved, then all other cells in the same row, column, and box have had
+/// `1` removed as a possible value.
+///
+/// [`ValueMask::VALUE_SOLVED_MASK`] is the mask for the top bit.
+/// [`ValueMask::CANDIDATES_MASK`] is the mask for all the candidate bits.
 #[derive(Clone, Copy, Eq, Hash, PartialEq)]
 pub struct ValueMask {
     mask: u32,

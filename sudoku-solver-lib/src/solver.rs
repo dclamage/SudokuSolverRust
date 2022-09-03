@@ -1,3 +1,5 @@
+//! Constains the [`Solver`] struct which is the main entry point for solving a puzzle.
+
 use std::sync::Arc;
 
 use crate::{board::Board, constraint::Constraint};

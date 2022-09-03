@@ -1,6 +1,8 @@
+//! Contains the [`LogicalStep`] trait for representing a logical step.
+
 use crate::{board::Board, logic_result::LogicResult, logical_step_desc::LogicalStepDescList};
 
-/// [`LogicalStep`] is a trait that defines the logic of a single logical step.
+/// This trait defines the logic of a single logical step.
 ///
 /// For example, this might be a naked single, a hidden single, or a naked pair.
 /// Each logical elimination concept has its own implementation of this trait.
@@ -22,6 +24,6 @@ pub trait LogicalStep {
     /// - [`LogicResult::None`] if the board is unchanged.
     /// - [`LogicResult::Changed`] if the board is changed.
     /// - [`LogicResult::Invalid`] if this constraint has made the solve impossible.
-    /// - [`LogicResult::Complete`] if the board is solved.
+    /// - [`LogicResult::Solved`] if the board is solved.
     fn step(&mut self, board: &mut Board, desc: Option<&mut LogicalStepDescList>) -> LogicResult;
 }

@@ -1,10 +1,16 @@
-//! Provides utility functions for working with cells.
-//!
-//! Generally, [`CellIndex`] instances are created by `CellUtility` functions.
+//! Contains [`CellUtility`] which has methods for working with cells.
 
 use crate::{candidate_index::CandidateIndex, cell_index::CellIndex};
 use itertools::Itertools;
 
+/// A utility struct for working with cells.
+///
+/// Use the [`CellUtility::new`] function to create a new instance with a specific
+/// board size.
+///
+/// Since many of the functions in this struct require the board size,
+/// by storing the size in the struct, we can avoid passing it as a
+/// parameter to each function.
 #[derive(Copy, Clone, Debug)]
 pub struct CellUtility {
     size: usize,
@@ -180,7 +186,7 @@ impl CellUtility {
         let mut result = Vec::new();
 
         for cell_group in cell_string
-            .split(";")
+            .split(';')
             .map(|s| s.trim())
             .filter(|s| !s.is_empty())
         {
@@ -262,7 +268,7 @@ impl CellUtility {
                     cur_val_start = 0;
                     cur_val_end = 0;
 
-                    if cells.len() == 0 {
+                    if cells.is_empty() {
                         return Err(err_msg);
                     }
 
@@ -301,7 +307,7 @@ impl CellUtility {
                         i += 1;
                     }
                     i -= 1;
-                } else if cur_char >= b'0' && cur_char <= b'9' {
+                } else if (b'0'..=b'9').contains(&cur_char) {
                     if value_start {
                         cur_val_start = cur_val_start * 10 + (cur_char - b'0') as usize;
                     } else {
@@ -333,16 +339,15 @@ impl CellUtility {
                 i += 1;
             }
 
-            if !last_added_directions {
-                if adding_rows
+            if !last_added_directions
+                && (adding_rows
                     || self
                         .add_range(&mut cols, cur_val_start, cur_val_end)
                         .is_err()
                     || self.add_cells(&mut cells, &rows, &cols).is_err()
-                    || cells.len() == 0
-                {
-                    return Err(err_msg);
-                }
+                    || cells.is_empty())
+            {
+                return Err(err_msg);
             }
 
             result.push(cells);
@@ -459,7 +464,7 @@ impl CellUtility {
         let cell_separator = if size <= 9 { "" } else { "," };
         let group_separator = ",";
 
-        if cells.len() == 0 {
+        if cells.is_empty() {
             return "".to_string();
         }
 

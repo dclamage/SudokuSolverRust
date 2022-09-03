@@ -1,3 +1,5 @@
+//! Contains [`Board`] which represents a Sudoku puzzle's size, constraints, and current solve state.
+
 use crate::{
     candidate_index::CandidateIndex, cell_index::CellIndex, cell_utility::CellUtility,
     constraint::Constraint, house::House, logic_result::LogicResult, math::*,
@@ -8,12 +10,26 @@ use std::{
     sync::Arc,
 };
 
+/// Represents the state of the sudoku board.
+///
+/// Operations for querying and modifying the board are provided.
+///
+/// Meta-data about the board is stored in the [`BoardData`] struct which is
+/// accessible via the `data` method.
+///
+/// Unless [`Board::deep_clone`] is used, the board metadata is not copied,
+/// and instead is shared among boards when cloned. This makes cloning faster,
+/// and is generally safe because board metadata can't be changed after initialization.
 #[derive(Clone)]
 pub struct Board {
     board: Vec<ValueMask>,
     data: Arc<BoardData>,
 }
 
+/// Contains meta-data about the board.
+///
+/// This data is immutable after initialization and contains information
+/// about the board's size, constraints, and other information.
 #[derive(Clone)]
 pub struct BoardData {
     size: usize,

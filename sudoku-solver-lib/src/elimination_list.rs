@@ -1,3 +1,5 @@
+//! Contains [`EliminationList`] for storing a list of eliminated candidates.
+
 use itertools::Itertools;
 
 use crate::{
@@ -147,8 +149,8 @@ impl EliminationList {
     ///
     /// // Eliminate all candidates from r1c1 - this will make the board invalid.
     /// for val in 1..=9 {
-    /// 	let candidate = cu.cell(0, 0).candidate(val);
-    /// 	elims.add(candidate);
+    ///     let candidate = cu.cell(0, 0).candidate(val);
+    ///     elims.add(candidate);
     /// }
     /// let result = elims.execute(&mut board);
     /// assert_eq!(result, LogicResult::Invalid);

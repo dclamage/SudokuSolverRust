@@ -1,3 +1,5 @@
+//! Contains [`House`] for representing the cells in a house along with its name.
+
 use crate::cell_index::CellIndex;
 
 /// A *house* is a group of N cells where N is the size of the board where

@@ -1,11 +1,13 @@
-//! Represents the location of a specific cell candidate.
-//!
-//! A 9x9 grid has 81 cells with 9 candidates each, and thus
-//! 729 candidates in total, so candidates are indexed 0 to 729
-//! in that case.
+//! Contains [`CandidateIndex`] for representing the location of a specific candidate
+//! within a cell.
 
 use crate::cell_index::CellIndex;
 
+/// Represents the location of a specific candidate within a cell.
+///
+/// A 9x9 grid has 81 cells with 9 candidates each, and thus
+/// 729 candidates in total, so candidates are indexed 0 to 729
+/// in that case.
 #[derive(Clone, Copy, Debug)]
 pub struct CandidateIndex {
     index: usize,

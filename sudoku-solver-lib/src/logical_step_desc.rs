@@ -1,3 +1,6 @@
+//! Contains the [`LogicalStepDescList`] struct for repesenting the human-readable
+//! descriptions of each logical step performed and their results.
+
 use std::fmt::Display;
 
 use crate::elimination_list::EliminationList;
@@ -51,6 +54,15 @@ impl Display for LogicalStepDesc {
     }
 }
 
+/// Represents the human-readable descriptions of each logical step performed and
+/// their results.
+///
+/// This is used to generate the human-readable output of the solver.
+///
+/// Logical steps can have sub-steps. For example, if a complicated contradiction
+/// is found by testing a value and then performing additional logic to determine
+/// that the value is incorrect, the sub-steps will contain the additional logic
+/// performed.
 #[derive(Debug, Clone)]
 pub struct LogicalStepDescList {
     steps: Vec<LogicalStepDesc>,

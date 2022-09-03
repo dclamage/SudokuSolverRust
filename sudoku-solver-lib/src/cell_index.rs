@@ -1,13 +1,14 @@
-//! Represents the location of a specific cell on a board.
-//!
-//! A 9x9 grid has 81 cells and are indexed 0 to 80.
-//!
-//! The CellIndex is not linked to a specific board, but it
-//! is linked to the size of the board.
-//! A 9x9 grid has a size of 9.
+//! Contains [`CellIndex`] for representing the location of a specific cell.
 
 use crate::candidate_index::CandidateIndex;
 
+/// Represents the location of a specific cell on a board.
+///
+/// A 9x9 grid has 81 cells and are indexed 0 to 80.
+///
+/// The CellIndex is not linked to a specific board, but it
+/// is linked to the size of the board.
+/// A 9x9 grid has a size of 9.
 #[derive(Clone, Copy, Debug)]
 pub struct CellIndex {
     index: usize,
@@ -145,8 +146,8 @@ impl CellIndex {
     pub fn taxicab_distance(self, other: Self) -> usize {
         let (row1, column1) = self.rc();
         let (row2, column2) = other.rc();
-        (row1 as isize - row2 as isize).abs() as usize
-            + (column1 as isize - column2 as isize).abs() as usize
+        (row1 as isize - row2 as isize).unsigned_abs()
+            + (column1 as isize - column2 as isize).unsigned_abs()
     }
 
     /// Determines if two cells are orthogonally adjacent.

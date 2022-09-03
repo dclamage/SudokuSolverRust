@@ -1,3 +1,5 @@
+//! Contains the [`Constraint`] trait for defining the behavior of additional constraints.
+
 use crate::board::Board;
 use crate::candidate_index::CandidateIndex;
 use crate::cell_index::CellIndex;
@@ -6,8 +8,7 @@ use crate::logic_result::LogicResult;
 use crate::logical_step_desc::LogicalStepDescList;
 use std::vec::Vec;
 
-/// [`Constraint`] is a trait that defines the logic of a constraint.
-/// Constraints are used by variant Sudokus to define extra rules
+/// Constraints are used by variant sudokus to define extra rules
 /// beyond the standard Sudoku rules.
 ///
 /// Most of the methods in this trait are optional, but aside from very
