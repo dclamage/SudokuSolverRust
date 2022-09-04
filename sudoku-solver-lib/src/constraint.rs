@@ -1,11 +1,6 @@
 //! Contains the [`Constraint`] trait for defining the behavior of additional constraints.
 
-use crate::board::Board;
-use crate::candidate_index::CandidateIndex;
-use crate::cell_index::CellIndex;
-use crate::house::House;
-use crate::logic_result::LogicResult;
-use crate::logical_step_desc::LogicalStepDescList;
+use crate::prelude::*;
 use std::vec::Vec;
 
 /// Constraints are used by variant sudokus to define extra rules
@@ -31,8 +26,14 @@ pub trait Constraint {
         self.name()
     }
 
-    /// Called once passing in the [`Board`] so the constaint can initialize itself based
-    /// on the board properties and all other constraints on the board.
+    /// Called when the board is initially created to give the constraint the opportunity
+    /// to do obvious modifications to the board based on the constraint which the end-user
+    /// would not care to be reported about.
+    ///
+    /// For example, a killer cage could remove obvious candidates that would make the overall sum
+    /// too large.
+    ///
+    /// Avoid doing any logic that the end-user may not understand why it happened.
     ///
     /// This method may be called multiple times, but only during board creation.
     /// It is called on all constraints until all of them return [`LogicResult::None`].
@@ -43,7 +44,7 @@ pub trait Constraint {
     /// - [`LogicResult::Changed`] if the board is changed.
     /// - [`LogicResult::Invalid`] if this constraint has made the solve impossible.
     /// - All other values are treated as [`LogicResult::None`].
-    fn init(&mut self, _board: &mut Board) -> LogicResult {
+    fn init_board(&self, _board: &mut Board) -> LogicResult {
         LogicResult::None
     }
 

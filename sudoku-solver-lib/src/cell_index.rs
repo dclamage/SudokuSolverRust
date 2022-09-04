@@ -1,6 +1,6 @@
 //! Contains [`CellIndex`] for representing the location of a specific cell.
 
-use crate::candidate_index::CandidateIndex;
+use crate::prelude::*;
 
 /// Represents the location of a specific cell on a board.
 ///

@@ -1,10 +1,6 @@
 //! Contains [`Board`] which represents a Sudoku puzzle's size, constraints, and current solve state.
 
-use crate::{
-    candidate_index::CandidateIndex, cell_index::CellIndex, cell_utility::CellUtility,
-    constraint::Constraint, house::House, logic_result::LogicResult, math::*,
-    value_mask::ValueMask,
-};
+use crate::prelude::*;
 use std::{
     collections::{BTreeSet, HashMap},
     sync::Arc,
@@ -23,6 +19,7 @@ use std::{
 #[derive(Clone)]
 pub struct Board {
     board: Vec<ValueMask>,
+    solved_count: usize,
     data: Arc<BoardData>,
 }
 
@@ -50,10 +47,11 @@ impl Board {
 
         let mut board = Board {
             board: vec![data.all_values_mask; data.num_cells],
+            solved_count: 0,
             data: Arc::new(data),
         };
 
-        board.clear_candidates(&elims);
+        board.clear_candidates(elims.iter());
 
         board
     }
@@ -61,8 +59,21 @@ impl Board {
     pub fn deep_clone(&self) -> Board {
         Board {
             board: self.board.clone(),
+            solved_count: self.solved_count,
             data: Arc::new(BoardData::clone(&self.data)),
         }
+    }
+
+    pub fn solved_count(&self) -> usize {
+        self.solved_count
+    }
+
+    pub fn is_solved(&self) -> bool {
+        self.solved_count == self.data.num_cells
+    }
+
+    pub fn data(&self) -> Arc<BoardData> {
+        self.data.clone()
     }
 
     pub fn size(&self) -> usize {
@@ -105,6 +116,14 @@ impl Board {
         self.board[cell.index()]
     }
 
+    pub fn cell_utility(&self) -> CellUtility {
+        CellUtility::new(self.size())
+    }
+
+    pub fn all_cells(&self) -> impl Iterator<Item = CellIndex> {
+        self.cell_utility().all_cells()
+    }
+
     pub fn has_candidate(&self, candidate: CandidateIndex) -> bool {
         let (cell, val) = candidate.cell_index_and_value();
         self.cell(cell).has(val)
@@ -121,19 +140,19 @@ impl Board {
         self.clear_value(cell, val)
     }
 
-    pub fn clear_candidates(&mut self, candidates: &[CandidateIndex]) -> bool {
+    pub fn clear_candidates(&mut self, candidates: impl Iterator<Item = CandidateIndex>) -> bool {
         let mut valid = true;
         for candidate in candidates {
-            if !self.clear_candidate(*candidate) {
+            if !self.clear_candidate(candidate) {
                 valid = false;
             }
         }
         valid
     }
 
-    pub fn set_solved(&mut self, cell: CellIndex, val: usize) -> bool {
+    pub fn set_solved(&mut self, cell: CellIndex, value: usize) -> bool {
         // Is this value possible?
-        if !self.cell(cell).has(val) {
+        if !self.cell(cell).has(value) {
             return false;
         }
 
@@ -143,14 +162,15 @@ impl Board {
         }
 
         // Mark as solved
-        self.board[cell.index()] = self.board[cell.index()].with_only(val).solved();
+        self.board[cell.index()] = self.board[cell.index()].with_only(value).solved();
+        self.solved_count += 1;
 
         // Clone the BoardData Arc to avoid borrowing issues
         let board_data = self.data.clone();
 
         // Apply all weak links
         let cu = CellUtility::new(self.size());
-        let set_candidate_index = cu.candidate(cell, val);
+        let set_candidate_index = cu.candidate(cell, value);
         for &elim_candidate_index in board_data.weak_links[set_candidate_index.index()].iter() {
             if !self.clear_candidate(elim_candidate_index) {
                 return false;
@@ -159,7 +179,7 @@ impl Board {
 
         // Enforce all constraints
         for constraint in board_data.constraints.iter() {
-            if constraint.enforce(self, cell, val) == LogicResult::Invalid {
+            if constraint.enforce(self, cell, value) == LogicResult::Invalid {
                 return false;
             }
         }
@@ -197,6 +217,46 @@ impl BoardData {
             total_weak_links: 0,
             constraints: constraints.to_vec(),
         }
+    }
+
+    pub fn size(&self) -> usize {
+        self.size
+    }
+
+    pub fn num_cells(&self) -> usize {
+        self.num_cells
+    }
+
+    pub fn num_candidates(&self) -> usize {
+        self.num_candidates
+    }
+
+    pub fn all_values_mask(&self) -> ValueMask {
+        self.all_values_mask
+    }
+
+    pub fn houses(&self) -> &[Arc<House>] {
+        &self.houses
+    }
+
+    pub fn houses_by_cell(&self) -> &[Vec<Arc<House>>] {
+        &self.houses_by_cell
+    }
+
+    pub fn weak_links(&self) -> &[BTreeSet<CandidateIndex>] {
+        &self.weak_links
+    }
+
+    pub fn weak_links_for(&self, candidate: CandidateIndex) -> &BTreeSet<CandidateIndex> {
+        &self.weak_links[candidate.index()]
+    }
+
+    pub fn total_weak_links(&self) -> usize {
+        self.total_weak_links
+    }
+
+    pub fn constraints(&self) -> &[Arc<dyn Constraint>] {
+        &self.constraints
     }
 
     fn create_houses(
@@ -291,7 +351,7 @@ impl BoardData {
         }
     }
 
-    fn init_weak_links(&mut self) -> Vec<CandidateIndex> {
+    fn init_weak_links(&mut self) -> EliminationList {
         self.init_sudoku_weak_links();
         self.init_constraint_weak_links()
     }
@@ -318,15 +378,15 @@ impl BoardData {
         }
     }
 
-    fn init_constraint_weak_links(&mut self) -> Vec<CandidateIndex> {
-        let mut elims: Vec<CandidateIndex> = Vec::new();
+    fn init_constraint_weak_links(&mut self) -> EliminationList {
+        let mut elims: EliminationList = EliminationList::new();
         for constraint in self.constraints.clone() {
             let weak_links = constraint.get_weak_links(self.size);
             for (candidate0, candidate1) in weak_links {
                 if candidate0 != candidate1 {
                     self.add_weak_link(candidate0, candidate1);
                 } else {
-                    elims.push(candidate0);
+                    elims.add(candidate0);
                 }
             }
         }
@@ -339,5 +399,20 @@ impl Default for Board {
     /// and no additional constraints.
     fn default() -> Self {
         Board::new(9, &[], &[])
+    }
+}
+
+impl std::fmt::Display for Board {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        for cell in self.all_cells() {
+            let mask = self.cell(cell);
+            if mask.is_single() {
+                write!(f, "{}", mask.value())?;
+            } else {
+                write!(f, ".")?;
+            }
+        }
+
+        Ok(())
     }
 }

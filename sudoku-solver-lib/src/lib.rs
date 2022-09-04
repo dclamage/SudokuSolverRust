@@ -22,5 +22,6 @@ pub mod logic_result;
 pub mod logical_step;
 pub mod logical_step_desc;
 pub mod math;
+pub mod prelude;
 pub mod solver;
 pub mod value_mask;

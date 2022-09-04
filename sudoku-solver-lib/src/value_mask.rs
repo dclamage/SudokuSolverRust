@@ -352,6 +352,21 @@ impl ValueMask {
             & !(Self::from_lower_equal(low) | Self::from_higher_equal(high, size))
     }
 
+    /// Returns the raw mask as a `u32`.
+    ///
+    /// # Example
+    /// ```
+    /// # use sudoku_solver_lib::value_mask::ValueMask;
+    /// let mask = ValueMask::from_value(5);
+    /// assert_eq!(mask.raw(), 0b10000);
+    ///
+    /// let mask = mask.solved();
+    /// assert_eq!(mask.raw(), 0b10000 | ValueMask::VALUE_SOLVED_MASK);
+    /// ```
+    pub fn raw(self) -> u32 {
+        self.mask
+    }
+
     /// Returns just the mask of value bits without the value set bit.
     ///
     /// # Example

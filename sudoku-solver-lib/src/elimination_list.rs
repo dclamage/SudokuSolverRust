@@ -1,11 +1,7 @@
 //! Contains [`EliminationList`] for storing a list of eliminated candidates.
 
+use crate::prelude::*;
 use itertools::Itertools;
-
-use crate::{
-    board::Board, candidate_index::CandidateIndex, cell_index::CellIndex,
-    cell_utility::CellUtility, logic_result::LogicResult,
-};
 use std::{collections::BTreeSet, fmt::Display};
 
 /// A utility struct for storing a list of eliminated candidates.
@@ -25,6 +21,41 @@ impl EliminationList {
         EliminationList {
             candidates: BTreeSet::new(),
         }
+    }
+
+    /// Create an elimination list from an iterator of candidates.
+    pub fn from_iter<I>(iter: I) -> EliminationList
+    where
+        I: IntoIterator<Item = CandidateIndex>,
+    {
+        EliminationList {
+            candidates: iter.into_iter().collect(),
+        }
+    }
+
+    /// Get the number of candidates in the elimination list.
+    pub fn len(&self) -> usize {
+        self.candidates.len()
+    }
+
+    /// Get if the elimination list is empty.
+    pub fn is_empty(&self) -> bool {
+        self.candidates.is_empty()
+    }
+
+    /// Get the candidates in the elimination list.
+    pub fn candidates(&self) -> &BTreeSet<CandidateIndex> {
+        &self.candidates
+    }
+
+    /// Returns true if the list contains the given candidate.
+    pub fn contains(&self, candidate: CandidateIndex) -> bool {
+        self.candidates.contains(&candidate)
+    }
+
+    /// Returns an iterator over the candidates in the list.
+    pub fn iter(&self) -> impl Iterator<Item = CandidateIndex> + '_ {
+        self.candidates.iter().copied()
     }
 
     /// Add a candidate to the elimination list.
@@ -103,21 +134,6 @@ impl EliminationList {
         self.candidates.remove(&candidate)
     }
 
-    /// Get the number of candidates in the elimination list.
-    pub fn len(&self) -> usize {
-        self.candidates.len()
-    }
-
-    /// Get if the elimination list is empty.
-    pub fn is_empty(&self) -> bool {
-        self.candidates.is_empty()
-    }
-
-    /// Get the candidates in the elimination list.
-    pub fn candidates(&self) -> &BTreeSet<CandidateIndex> {
-        &self.candidates
-    }
-
     /// Execute the eliminations on a [`Board`].
     ///
     /// # Returns
@@ -181,6 +197,18 @@ impl EliminationList {
 impl Default for EliminationList {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+impl Into<EliminationList> for BTreeSet<CandidateIndex> {
+    fn into(self) -> EliminationList {
+        EliminationList { candidates: self }
+    }
+}
+
+impl Into<BTreeSet<CandidateIndex>> for EliminationList {
+    fn into(self) -> BTreeSet<CandidateIndex> {
+        self.candidates
     }
 }
 

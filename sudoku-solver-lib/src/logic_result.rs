@@ -6,11 +6,9 @@
 /// * None: No change to the board.
 /// * Changed: A change to the board.
 /// * Invalid: A contradiction was found. Do not try to continue solving.
-/// * Solved: The board is solved.
 #[derive(Debug, PartialEq, Eq)]
 pub enum LogicResult {
     None,
     Changed,
     Invalid,
-    Solved,
 }

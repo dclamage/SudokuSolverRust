@@ -1,6 +1,6 @@
 //! Contains [`CellUtility`] which has methods for working with cells.
 
-use crate::{candidate_index::CandidateIndex, cell_index::CellIndex};
+use crate::prelude::*;
 use itertools::Itertools;
 
 /// A utility struct for working with cells.

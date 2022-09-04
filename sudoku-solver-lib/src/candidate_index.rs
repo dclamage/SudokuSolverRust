@@ -1,7 +1,7 @@
 //! Contains [`CandidateIndex`] for representing the location of a specific candidate
 //! within a cell.
 
-use crate::cell_index::CellIndex;
+use crate::prelude::*;
 
 /// Represents the location of a specific candidate within a cell.
 ///
