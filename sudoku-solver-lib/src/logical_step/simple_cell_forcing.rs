@@ -71,17 +71,12 @@ mod test {
 
         fn get_weak_links(&self, size: usize) -> Vec<(CandidateIndex, CandidateIndex)> {
             let cu = CellUtility::new(size);
-            let cell0 = cu.cell(0, 0);
-            let cell1 = cu.cell(0, 1);
-            vec![
-                (cu.candidate(cell0, 2), cu.candidate(cell1, 1)),
-                (cu.candidate(cell0, 3), cu.candidate(cell1, 1)),
-                (cu.candidate(cell0, 4), cu.candidate(cell1, 1)),
-                (cu.candidate(cell0, 5), cu.candidate(cell1, 1)),
-                (cu.candidate(cell0, 6), cu.candidate(cell1, 1)),
-                (cu.candidate(cell0, 7), cu.candidate(cell1, 1)),
-                (cu.candidate(cell0, 8), cu.candidate(cell1, 1)),
-            ]
+            let cell_r1c1 = cu.cell(0, 0);
+            let cell_r1c2 = cu.cell(0, 1);
+            let candidate_1r1c2 = cu.candidate(cell_r1c2, 1);
+            (2..=8)
+                .map(|v| (cu.candidate(cell_r1c1, v), candidate_1r1c2))
+                .collect()
         }
     }
 
