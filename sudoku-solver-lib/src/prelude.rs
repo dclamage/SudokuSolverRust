@@ -1,5 +1,6 @@
 pub use crate::board::*;
 pub use crate::candidate_index::*;
+pub use crate::candidate_links::*;
 pub use crate::cell_index::*;
 pub use crate::cell_utility::*;
 pub use crate::constraint::*;

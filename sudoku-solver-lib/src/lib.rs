@@ -13,6 +13,7 @@
 
 pub mod board;
 pub mod candidate_index;
+pub mod candidate_links;
 pub mod cell_index;
 pub mod cell_utility;
 pub mod constraint;

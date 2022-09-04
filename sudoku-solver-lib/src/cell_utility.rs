@@ -136,8 +136,7 @@ impl CellUtility {
     ///
     /// # Example
     /// ```
-    /// # use sudoku_solver_lib::cell_utility::CellUtility;
-    /// # use sudoku_solver_lib::candidate_index::CandidateIndex;
+    /// # use sudoku_solver_lib::prelude::*;
     /// let size = 9;
     /// let cu = CellUtility::new(size);
     /// let candidates: Vec<CandidateIndex> = cu.all_candidates().collect();
@@ -403,12 +402,11 @@ impl CellUtility {
     ///
     /// # Example
     /// ```
-    /// # use sudoku_solver_lib::cell_utility::CellUtility;
-    /// # use sudoku_solver_lib::cell_index::CellIndex;
+    /// # use sudoku_solver_lib::prelude::*;
     /// let size = 9;
     /// let cu = CellUtility::new(size);
     /// let cells = vec![cu.cell(0, 0), cu.cell(0, 1), cu.cell(0, 2)];
-    /// let pairs = cu.candidate_pairs(&cells);
+    /// let pairs: Vec<(CandidateIndex, CandidateIndex)> = cu.candidate_pairs(&cells).collect();
     /// assert_eq!(pairs.len(), 27);
     /// let cand1r1c1 = cu.candidate(cu.cell(0, 0), 1);
     /// let cand1r1c2 = cu.candidate(cu.cell(0, 1), 1);
@@ -424,16 +422,20 @@ impl CellUtility {
     /// assert!(pairs.contains(&(cand8r1c1, cand8r1c3)));
     /// assert!(pairs.contains(&(cand8r1c2, cand8r1c3)));
     /// ```
-    pub fn candidate_pairs(self, cells: &[CellIndex]) -> Vec<(CandidateIndex, CandidateIndex)> {
-        let mut result = Vec::new();
-        for val in 1..=self.size {
-            for cell_pair in cells.iter().combinations(2) {
-                let cand0 = self.candidate(*cell_pair[0], val);
-                let cand1 = self.candidate(*cell_pair[1], val);
-                result.push((cand0, cand1));
-            }
-        }
-        result
+    pub fn candidate_pairs(
+        self,
+        cells: &[CellIndex],
+    ) -> impl Iterator<Item = (CandidateIndex, CandidateIndex)> + '_ {
+        (1..=self.size).flat_map(move |val| {
+            cells.iter().copied().tuple_combinations::<(_, _)>().map(
+                move |(candidate0, candidate1)| {
+                    (
+                        self.candidate(candidate0, val),
+                        self.candidate(candidate1, val),
+                    )
+                },
+            )
+        })
     }
 
     /// Generates a compact description of a group of cells.

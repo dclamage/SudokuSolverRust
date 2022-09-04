@@ -1,5 +1,3 @@
-use std::collections::BTreeSet;
-
 use crate::prelude::*;
 
 use super::macros::add_step_with_elims;
@@ -14,6 +12,7 @@ impl LogicalStep for SimpleCellForcing {
     }
 
     fn step(&self, board: &mut Board, mut desc: Option<&mut LogicalStepDescList>) -> LogicResult {
+        let size = board.size();
         let cu = board.cell_utility();
         let bd = board.data();
 
@@ -23,31 +22,35 @@ impl LogicalStep for SimpleCellForcing {
                 continue;
             }
 
-            let mut elim_set: BTreeSet<CandidateIndex> = BTreeSet::new();
+            let mut elim_set = CandidateLinks::new(size);
             let mut is_first = true;
             for value in mask {
                 let candidate = cu.candidate(cell, value);
                 if is_first {
-                    elim_set = bd.weak_links_for(candidate).clone();
+                    elim_set.union(bd.weak_links_for(candidate));
                     is_first = false;
                 } else {
-                    elim_set = &elim_set & bd.weak_links_for(candidate);
-                }
-
-                if elim_set.is_empty() {
-                    break;
+                    elim_set.intersect(bd.weak_links_for(candidate));
                 }
             }
 
-            elim_set.retain(|&c| board.has_candidate(c));
+            if elim_set.is_empty() {
+                continue;
+            }
 
-            if !elim_set.is_empty() {
-                let elim_set: EliminationList = elim_set.into();
-                if !board.clear_candidates(elim_set.iter()) {
-                    add_step_with_elims!(self, desc, format!("{}", cell), &elim_set);
+            let mut elims = EliminationList::new();
+            for candidate in elim_set.links() {
+                if board.has_candidate(candidate) {
+                    elims.add(candidate);
+                }
+            }
+
+            if !elims.is_empty() {
+                if !board.clear_candidates(elims.iter()) {
+                    add_step_with_elims!(self, desc, format!("{}", cell), &elims);
                     return LogicResult::Invalid;
                 }
-                add_step_with_elims!(self, desc, format!("{}", cell), &elim_set);
+                add_step_with_elims!(self, desc, format!("{}", cell), &elims);
                 return LogicResult::Changed;
             }
         }

@@ -1,10 +1,7 @@
 //! Contains [`Board`] which represents a Sudoku puzzle's size, constraints, and current solve state.
 
 use crate::prelude::*;
-use std::{
-    collections::{BTreeSet, HashMap},
-    sync::Arc,
-};
+use std::{collections::HashMap, sync::Arc};
 
 /// Represents the state of the sudoku board.
 ///
@@ -35,7 +32,7 @@ pub struct BoardData {
     all_values_mask: ValueMask,
     houses: Vec<Arc<House>>,
     houses_by_cell: Vec<Vec<Arc<House>>>,
-    weak_links: Vec<BTreeSet<CandidateIndex>>,
+    weak_links: Vec<CandidateLinks>,
     total_weak_links: usize,
     constraints: Vec<Arc<dyn Constraint>>,
 }
@@ -104,7 +101,7 @@ impl Board {
         self.data.total_weak_links
     }
 
-    pub fn weak_links(&self) -> &[BTreeSet<CandidateIndex>] {
+    pub fn weak_links(&self) -> &[CandidateLinks] {
         &self.data.weak_links
     }
 
@@ -171,8 +168,8 @@ impl Board {
         // Apply all weak links
         let cu = CellUtility::new(self.size());
         let set_candidate_index = cu.candidate(cell, value);
-        for &elim_candidate_index in board_data.weak_links[set_candidate_index.index()].iter() {
-            if !self.clear_candidate(elim_candidate_index) {
+        for candidate_index in board_data.weak_links[set_candidate_index.index()].links() {
+            if !self.clear_candidate(candidate_index) {
                 return false;
             }
         }
@@ -205,6 +202,7 @@ impl BoardData {
         let num_candidates = size * num_cells;
         let houses = Self::create_houses(size, regions, constraints);
         let houses_by_cell = Self::create_houses_by_cell(size, &houses);
+        let weak_links = vec![CandidateLinks::new(size); num_candidates];
 
         BoardData {
             size,
@@ -213,7 +211,7 @@ impl BoardData {
             all_values_mask,
             houses,
             houses_by_cell,
-            weak_links: vec![BTreeSet::new(); num_candidates],
+            weak_links,
             total_weak_links: 0,
             constraints: constraints.to_vec(),
         }
@@ -243,11 +241,11 @@ impl BoardData {
         &self.houses_by_cell
     }
 
-    pub fn weak_links(&self) -> &[BTreeSet<CandidateIndex>] {
+    pub fn weak_links(&self) -> &[CandidateLinks] {
         &self.weak_links
     }
 
-    pub fn weak_links_for(&self, candidate: CandidateIndex) -> &BTreeSet<CandidateIndex> {
+    pub fn weak_links_for(&self, candidate: CandidateIndex) -> &CandidateLinks {
         &self.weak_links[candidate.index()]
     }
 
@@ -343,10 +341,11 @@ impl BoardData {
     }
 
     fn add_weak_link(&mut self, candidate1: CandidateIndex, candidate2: CandidateIndex) {
-        if self.weak_links[candidate1.index()].insert(candidate2) {
+        if self.weak_links[candidate1.index()].set(candidate2, true) {
             self.total_weak_links += 1;
         }
-        if self.weak_links[candidate2.index()].insert(candidate1) {
+
+        if self.weak_links[candidate2.index()].set(candidate1, true) {
             self.total_weak_links += 1;
         }
     }
@@ -414,5 +413,36 @@ impl std::fmt::Display for Board {
         }
 
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_board9() {
+        let board = Board::new(9, &[], &[]);
+        assert_eq!(board.size(), 9);
+        assert_eq!(board.num_cells(), 81);
+        assert_eq!(board.num_candidates(), 729);
+        assert_eq!(board.houses().len(), 27);
+        assert_eq!(
+            board.total_weak_links(),
+            ((board.size() - 1) * 4 - 4) * board.num_candidates()
+        );
+    }
+
+    #[test]
+    fn test_board16() {
+        let board = Board::new(16, &[], &[]);
+        assert_eq!(board.size(), 16);
+        assert_eq!(board.num_cells(), 256);
+        assert_eq!(board.num_candidates(), 4096);
+        assert_eq!(board.houses().len(), 48);
+        assert_eq!(
+            board.total_weak_links(),
+            ((board.size() - 1) * 4 - 6) * board.num_candidates()
+        );
     }
 }
