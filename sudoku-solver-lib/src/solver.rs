@@ -59,6 +59,7 @@ impl Solver {
             Arc::new(AllNakedSingles),
             Arc::new(HiddenSingle),
             Arc::new(NakedSingle),
+            Arc::new(SimpleCellForcing),
         ]
     }
 
