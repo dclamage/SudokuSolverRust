@@ -31,7 +31,7 @@ impl LogicalStep for SimpleCellForcing {
                     elim_set = bd.weak_links_for(candidate).clone();
                     is_first = false;
                 } else {
-                    elim_set = &elim_set & &bd.weak_links_for(candidate);
+                    elim_set = &elim_set & bd.weak_links_for(candidate);
                 }
 
                 if elim_set.is_empty() {

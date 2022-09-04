@@ -23,16 +23,6 @@ impl EliminationList {
         }
     }
 
-    /// Create an elimination list from an iterator of candidates.
-    pub fn from_iter<I>(iter: I) -> EliminationList
-    where
-        I: IntoIterator<Item = CandidateIndex>,
-    {
-        EliminationList {
-            candidates: iter.into_iter().collect(),
-        }
-    }
-
     /// Get the number of candidates in the elimination list.
     pub fn len(&self) -> usize {
         self.candidates.len()
@@ -200,15 +190,27 @@ impl Default for EliminationList {
     }
 }
 
-impl Into<EliminationList> for BTreeSet<CandidateIndex> {
-    fn into(self) -> EliminationList {
-        EliminationList { candidates: self }
+impl From<BTreeSet<CandidateIndex>> for EliminationList {
+    fn from(candidates: BTreeSet<CandidateIndex>) -> Self {
+        Self { candidates }
     }
 }
 
-impl Into<BTreeSet<CandidateIndex>> for EliminationList {
-    fn into(self) -> BTreeSet<CandidateIndex> {
-        self.candidates
+impl From<EliminationList> for BTreeSet<CandidateIndex> {
+    fn from(elims: EliminationList) -> Self {
+        elims.candidates
+    }
+}
+
+impl FromIterator<CandidateIndex> for EliminationList {
+    /// Create an elimination list from an iterator of candidates.
+    fn from_iter<I>(iter: I) -> EliminationList
+    where
+        I: IntoIterator<Item = CandidateIndex>,
+    {
+        EliminationList {
+            candidates: iter.into_iter().collect(),
+        }
     }
 }
 
