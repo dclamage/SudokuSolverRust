@@ -118,6 +118,15 @@ impl CellIndex {
         (0..self.size).map(|value| self.candidate(value)).collect()
     }
 
+    /// Gets the lexicographically next [`CellIndex`], if any.
+    pub fn next_cell(self) -> Option<Self> {
+        if self.index < self.size * self.size - 1 {
+            Some(Self::new(self.index + 1, self.size))
+        } else {
+            None
+        }
+    }
+
     /// Gets the taxicab distance between two cells.
     ///
     /// # Example

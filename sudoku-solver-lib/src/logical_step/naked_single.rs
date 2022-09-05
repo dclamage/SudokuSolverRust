@@ -1,5 +1,4 @@
 use crate::prelude::*;
-use macros::*;
 
 /// A "Naked Single" is when a cell has been reduced to a single candidate.
 ///
@@ -11,7 +10,7 @@ impl LogicalStep for NakedSingle {
         "Naked Single"
     }
 
-    fn step(&self, board: &mut Board, mut desc: Option<&mut LogicalStepDescList>) -> LogicResult {
+    fn run(&self, board: &mut Board, generate_description: bool) -> LogicalStepResult {
         for cell in board.all_cells() {
             let mask = board.cell(cell);
             if mask.is_solved() {
@@ -21,19 +20,31 @@ impl LogicalStep for NakedSingle {
             if mask.is_single() {
                 let value = mask.value();
                 if board.set_solved(cell, value) {
-                    add_step!(self, desc, format!("{}={}", cell, value));
-                    return LogicResult::Changed;
+                    let desc = if generate_description {
+                        Some(format!("{}={}", cell, value).into())
+                    } else {
+                        None
+                    };
+                    return LogicalStepResult::Changed(desc);
                 } else {
-                    add_step!(self, desc, format!("{} cannot be set to {}", cell, value));
-                    return LogicResult::Invalid;
+                    let desc = if generate_description {
+                        Some(format!("{} cannot be set to {}", cell, value).into())
+                    } else {
+                        None
+                    };
+                    return LogicalStepResult::Invalid(desc);
                 }
             } else if mask.is_empty() {
-                add_step!(self, desc, format!("{} has no candidates", cell));
-                return LogicResult::Invalid;
+                let desc = if generate_description {
+                    Some(format!("{} has no candidates", cell).into())
+                } else {
+                    None
+                };
+                return LogicalStepResult::Invalid(desc);
             }
         }
 
-        LogicResult::None
+        LogicalStepResult::None
     }
 }
 
@@ -46,17 +57,17 @@ mod test {
         let mut board = Board::default();
         let cu = board.cell_utility();
         let naked_single = NakedSingle;
-        let mut desc = LogicalStepDescList::new();
 
         // There should be no naked singles on the initial board
-        assert!(naked_single.step(&mut board, None) == LogicResult::None);
+        assert!(naked_single.run(&mut board, true).is_none());
 
         // Clear all candidates except 9 from r1c1
         let cell = cu.cell(0, 0);
         board.clear_candidates((1..=8).map(|v| cu.candidate(cell, v)));
 
         // There should be a naked single in r1c1
-        assert!(naked_single.step(&mut board, Some(&mut desc)) == LogicResult::Changed);
-        assert_eq!(desc.to_string(), "Naked Single: r1c1=9");
+        let result = naked_single.run(&mut board, true);
+        assert!(result.is_changed());
+        assert_eq!(result.to_string(), "r1c1=9");
     }
 }

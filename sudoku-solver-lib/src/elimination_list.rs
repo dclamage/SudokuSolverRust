@@ -127,14 +127,11 @@ impl EliminationList {
     /// Execute the eliminations on a [`Board`].
     ///
     /// # Returns
-    /// - [`LogicResult`] - The result of the eliminations.
+    /// - [`LogicalStepResult`] - The result of the eliminations.
     ///
     /// # Example
     /// ```
-    /// # use sudoku_solver_lib::elimination_list::EliminationList;
-    /// # use sudoku_solver_lib::cell_utility::CellUtility;
-    /// # use sudoku_solver_lib::board::Board;
-    /// # use sudoku_solver_lib::logic_result::LogicResult;
+    /// # use sudoku_solver_lib::prelude::*;
     /// // Create a default board.
     /// let mut board = Board::default();
     ///
@@ -153,7 +150,7 @@ impl EliminationList {
     /// let result = elims.execute(&mut board);
     ///
     /// // Check the result.
-    /// assert_eq!(result, LogicResult::Changed);
+    /// assert!(result.is_changed());
     /// assert!(!board.has_candidate(candidate1));
     /// assert!(!board.has_candidate(candidate2));
     /// assert!(!board.has_candidate(candidate3));
@@ -164,18 +161,18 @@ impl EliminationList {
     ///     elims.add(candidate);
     /// }
     /// let result = elims.execute(&mut board);
-    /// assert_eq!(result, LogicResult::Invalid);
+    /// assert!(result.is_invalid());
     /// ```
-    pub fn execute(&self, board: &mut Board) -> LogicResult {
-        let mut result = LogicResult::None;
+    pub fn execute(&self, board: &mut Board) -> LogicalStepResult {
+        let mut result = LogicalStepResult::None;
         for &candidate in self.candidates.iter() {
             if board.has_candidate(candidate) {
                 if board.clear_candidate(candidate) {
-                    if result == LogicResult::None {
-                        result = LogicResult::Changed;
+                    if result.is_none() {
+                        result = LogicalStepResult::Changed(None);
                     }
                 } else {
-                    result = LogicResult::Invalid;
+                    return LogicalStepResult::Invalid(None);
                 }
             }
         }

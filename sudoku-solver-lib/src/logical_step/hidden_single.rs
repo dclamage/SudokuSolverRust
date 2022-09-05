@@ -1,5 +1,4 @@
 use crate::prelude::*;
-use macros::*;
 
 /// A "Hidden Single" is when a candidate can appear in only one cell within a house.
 pub struct HiddenSingle;
@@ -13,7 +12,7 @@ impl LogicalStep for HiddenSingle {
         true
     }
 
-    fn step(&self, board: &mut Board, mut desc: Option<&mut LogicalStepDescList>) -> LogicResult {
+    fn run(&self, board: &mut Board, generate_description: bool) -> LogicalStepResult {
         let board_data = board.data();
         let all_values = board_data.all_values_mask();
 
@@ -35,12 +34,12 @@ impl LogicalStep for HiddenSingle {
             let all_values_seen = at_least_once | set_mask;
             if all_values_seen != all_values {
                 let missing_mask: ValueMask = all_values & !all_values_seen;
-                add_step!(
-                    self,
-                    desc,
-                    format!("{} has nowhere to place {}", house, missing_mask)
-                );
-                return LogicResult::Invalid;
+                let desc: Option<LogicalStepDesc> = if generate_description {
+                    Some(format!("{} has nowhere to place {}", house, missing_mask).into())
+                } else {
+                    None
+                };
+                return LogicalStepResult::Invalid(desc);
             }
 
             let exactly_once = at_least_once & !more_than_once;
@@ -53,21 +52,27 @@ impl LogicalStep for HiddenSingle {
                 let cell_mask = board.cell(cell);
                 if cell_mask.has(value) {
                     if board.set_solved(cell, value) {
-                        add_step!(self, desc, format!("In {}: {}={}", house, cell, value));
-                        return LogicResult::Changed;
+                        let desc: Option<LogicalStepDesc> = if generate_description {
+                            Some(format!("In {}: {}={}", house, cell, value).into())
+                        } else {
+                            None
+                        };
+                        return LogicalStepResult::Changed(desc);
                     } else {
-                        add_step!(
-                            self,
-                            desc,
-                            format!("In {}: {} cannot be set to {}", house, cell, value)
-                        );
-                        return LogicResult::Invalid;
+                        let desc: Option<LogicalStepDesc> = if generate_description {
+                            Some(
+                                format!("In {}: {} cannot be set to {}", house, cell, value).into(),
+                            )
+                        } else {
+                            None
+                        };
+                        return LogicalStepResult::Invalid(desc);
                     }
                 }
             }
         }
 
-        LogicResult::None
+        LogicalStepResult::None
     }
 }
 
@@ -80,16 +85,17 @@ mod test {
         let mut board = Board::default();
         let cu = board.cell_utility();
         let hidden_single = HiddenSingle;
-        let mut desc = LogicalStepDescList::new();
 
         // There should be no hidden singles on the initial board
-        assert!(hidden_single.step(&mut board, None) == LogicResult::None);
+        assert!(hidden_single.run(&mut board, true).is_none());
 
         // Clear 9 from all cells in row 1 except r1c1
         board.clear_candidates((1..=8).map(|col| cu.candidate(cu.cell(0, col), 9)));
 
         // There should be a hidden single 9 in r1c1
-        assert!(hidden_single.step(&mut board, Some(&mut desc)) == LogicResult::Changed);
-        assert_eq!(desc.to_string(), "Hidden Single: In Row 1: r1c1=9");
+        let result = hidden_single.run(&mut board, true);
+        assert!(result.is_changed());
+        assert!(result.description().is_some());
+        assert_eq!(result.to_string(), "In Row 1: r1c1=9");
     }
 }

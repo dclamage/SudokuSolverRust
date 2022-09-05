@@ -13,9 +13,9 @@ use std::vec::Vec;
 /// - [`Constraint::cells_must_contain`] can call [`Constraint::cells_must_contain_by_running_logic`]
 /// to automatically determine the answer based on running the [`Constraint::step_logic`] method.
 ///
-/// - [`Constraint::get_weak_links`] can call [`Constraint::get_weak_links_by_running_logic`]
-/// to automatically generate weak links based on running the [`Constraint::enforce`]
-/// and [`Constraint::step_logic`] methods.
+/// - [`Constraint::get_weak_links`] can call [`get_weak_links_for_nonrepeat`]
+/// to automatically generate weak links based on the constraint having cells
+/// which cannot repeat a value.
 pub trait Constraint {
     /// A generic name for the constaint which is independent of how it was intialized.
     fn name(&self) -> String;
@@ -36,16 +36,16 @@ pub trait Constraint {
     /// Avoid doing any logic that the end-user may not understand why it happened.
     ///
     /// This method may be called multiple times, but only during board creation.
-    /// It is called on all constraints until all of them return [`LogicResult::None`].
+    /// It is called on all constraints until all of them return [`LogicalStepResult::None`].
     /// This allows them react to each other and how they may have changed the board.
     ///
     /// Return the following based on the situation:
-    /// - [`LogicResult::None`] if the board is unchanged.
-    /// - [`LogicResult::Changed`] if the board is changed.
-    /// - [`LogicResult::Invalid`] if this constraint has made the solve impossible.
-    /// - All other values are treated as [`LogicResult::None`].
-    fn init_board(&self, _board: &mut Board) -> LogicResult {
-        LogicResult::None
+    /// - [`LogicalStepResult::None`] if the board is unchanged.
+    /// - [`LogicalStepResult::Changed`] if the board is changed.
+    /// - [`LogicalStepResult::Invalid`] if this constraint has made the solve impossible.
+    /// - All other values are treated as [`LogicalStepResult::None`].
+    fn init_board(&self, _board: &mut Board) -> LogicalStepResult {
+        LogicalStepResult::None
     }
 
     /// Called when a value has just been set on the board.
@@ -61,11 +61,10 @@ pub trait Constraint {
     /// All weak links will be applied before this function is called.
     ///
     /// Return the following based on the situation:
-    /// - [`LogicResult::None`] if the constraint is not violated.
-    /// - [`LogicResult::Invalid`] if the constraint is violated.
-    /// - All other values are treated as [`LogicResult::None`].
-    fn enforce(&self, _board: &Board, _cell: CellIndex, _val: usize) -> LogicResult {
-        LogicResult::None
+    /// - [`LogicalStepResult::None`] if the constraint is not violated.
+    /// - [`LogicalStepResult::Invalid`] if the constraint is violated.
+    fn enforce(&self, _board: &Board, _cell: CellIndex, _val: usize) -> LogicalStepResult {
+        LogicalStepResult::None
     }
 
     /// Called during logical solving.
@@ -80,23 +79,17 @@ pub trait Constraint {
     ///
     /// Do not attempt to do any logic which isn't relevant to this constraint.
     ///
-    /// Any eliminations should be tracked and added to the [`LogicalStepDescList`] object if provided,
+    /// Any eliminations should be tracked and added to the returned [`LogicalStepResult`],
     /// along with a human readable description of why those eliminations occurred.
     ///
-    /// Eliminations do not need to be tracked if the [`LogicalStepDescList`] object is not provided.
+    /// Eliminations do not need to be tracked if the brute forcing boolean is set to true.
     ///
-    /// Return the following based on the situation. You must track this yourself and return an accurate [`LogicResult`]:
-    /// - [`LogicResult::None`] if the board is unchanged.
-    /// - [`LogicResult::Changed`] if the board is changed.
-    /// - [`LogicResult::Invalid`] if this constraint can no longer be satisfied.
-    /// - All other values are treated as [`LogicResult::None`].
-    fn step_logic(
-        &self,
-        _board: &mut Board,
-        _logical_steps: Option<&mut LogicalStepDescList>,
-        _is_brute_forcing: bool,
-    ) -> LogicResult {
-        LogicResult::None
+    /// Return the following based on the situation. You must track this yourself and return an accurate [`LogicalStepResult`]:
+    /// - [`LogicalStepResult::None`] if the board is unchanged.
+    /// - [`LogicalStepResult::Changed`] if the board is changed.
+    /// - [`LogicalStepResult::Invalid`] if this constraint can no longer be satisfied.
+    fn step_logic(&self, _board: &mut Board, _is_brute_forcing: bool) -> LogicalStepResult {
+        LogicalStepResult::None
     }
 
     /// Return a vector of cells which must contain the given value.
@@ -113,7 +106,7 @@ pub trait Constraint {
     ///
     /// This is determined by cloning the board, and then removing the given value from all
     /// cells in the constraint and then running the [`Constraint::step_logic`] method to see
-    /// if it returns [`LogicResult::Invalid`].
+    /// if it returns [`LogicalStepResult::Invalid`].
     fn cells_must_contain_by_running_logic(
         &self,
         board: &mut Board,
@@ -137,12 +130,12 @@ pub trait Constraint {
                 board_clone.clear_value(cell, value);
             }
 
-            let mut logic_result = LogicResult::Changed;
-            while logic_result == LogicResult::Changed {
-                logic_result = self.step_logic(&mut board_clone, Option::None, false);
+            let mut logic_result = LogicalStepResult::Changed(None);
+            while logic_result.is_changed() {
+                logic_result = self.step_logic(&mut board_clone, true);
             }
 
-            if logic_result != LogicResult::Invalid {
+            if !logic_result.is_invalid() {
                 result.clear();
             }
         }
@@ -181,66 +174,6 @@ pub trait Constraint {
     /// repeat will generate the needed weak link pairs for that group.
     fn get_weak_links(&self, _size: usize) -> Vec<(CandidateIndex, CandidateIndex)> {
         Vec::new()
-    }
-
-    /// Can be used by [`Constraint::get_weak_links`] to automatically determine the
-    /// answer based on running the [`Constraint::step_logic`] method.
-    ///
-    /// This is determined by setting each candidate in each cell one at a time to a cloned board,
-    /// then running the [`Constraint::step_logic`] method to see if it returns [`LogicResult::Invalid`].
-    fn get_weak_links_by_running_logic(
-        &self,
-        board: &Board,
-        cells: &[CellIndex],
-    ) -> Vec<(CandidateIndex, CandidateIndex)> {
-        let mut result = Vec::new();
-
-        for &cell in cells {
-            let orig_mask = board.cell(cell);
-            if orig_mask.is_single() {
-                continue;
-            }
-
-            for val in orig_mask {
-                let cand0 = cell.candidate(val);
-
-                let mut board_clone = board.clone();
-                if !board_clone.set_solved(cell, val) {
-                    // A weak link to self indicates that the candidate is generally invalid
-                    result.push((cand0, cand0));
-                    continue;
-                }
-
-                let mut logic_result = LogicResult::Changed;
-                while logic_result == LogicResult::Changed {
-                    logic_result = self.step_logic(&mut board_clone, Option::None, false);
-                }
-
-                if logic_result == LogicResult::Invalid {
-                    // A weak link to self indicates that the candidate is generally invalid
-                    result.push((cand0, cand0));
-                    continue;
-                }
-
-                for &cell1 in cells.iter() {
-                    if cell == cell1 {
-                        continue;
-                    }
-
-                    let orig_mask1 = board.cell(cell1).unsolved();
-                    let new_mask1 = board_clone.cell(cell1).unsolved();
-                    if orig_mask1 != new_mask1 {
-                        let diff_mask = orig_mask1 & !new_mask1;
-                        for val1 in diff_mask {
-                            let cand1 = cell1.candidate(val1);
-                            result.push((cand0, cand1));
-                        }
-                    }
-                }
-            }
-        }
-
-        result
     }
 
     /// Some contraints essentially create new houses. For example, an extra region

@@ -1,5 +1,8 @@
 //! Provides some commonly needed math functions.
 
+use crate::prelude::*;
+use itertools::Itertools;
+
 /// Returns the binoomial coefficient of `n` choose `k`.
 ///
 /// Useful for computing the number of combinations of `k` items
@@ -92,4 +95,17 @@ pub fn default_regions(size: usize) -> Vec<usize> {
     }
 
     regions
+}
+
+/// Utility function to generate the weak links for a group of cells where the same digit
+/// cannot repeat in the group.
+pub fn get_weak_links_for_nonrepeat(
+    group: impl Iterator<Item = CellIndex> + Clone,
+) -> Vec<(CandidateIndex, CandidateIndex)> {
+    group
+        .tuple_combinations()
+        .flat_map(move |(cell1, cell2)| {
+            (1..=9).map(move |value| (cell1.candidate(value), cell2.candidate(value)))
+        })
+        .collect()
 }

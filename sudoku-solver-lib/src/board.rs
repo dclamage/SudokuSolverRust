@@ -176,7 +176,7 @@ impl Board {
 
         // Enforce all constraints
         for constraint in board_data.constraints.iter() {
-            if constraint.enforce(self, cell, value) == LogicResult::Invalid {
+            if constraint.enforce(self, cell, value).is_invalid() {
                 return false;
             }
         }

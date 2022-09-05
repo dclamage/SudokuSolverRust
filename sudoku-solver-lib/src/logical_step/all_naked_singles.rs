@@ -19,10 +19,13 @@ impl LogicalStep for AllNakedSingles {
         false
     }
 
-    fn step(&self, board: &mut Board, desc: Option<&mut LogicalStepDescList>) -> LogicResult {
-        assert!(desc.is_none());
+    fn run(&self, board: &mut Board, generate_description: bool) -> LogicalStepResult {
+        assert!(
+            !generate_description,
+            "AllNakedSingles should not be used during logical solves"
+        );
 
-        let mut result = LogicResult::None;
+        let mut result = LogicalStepResult::None;
         loop {
             if board.is_solved() {
                 break;
@@ -40,16 +43,16 @@ impl LogicalStep for AllNakedSingles {
                     if board.set_solved(cell, value) {
                         changed = true;
                     } else {
-                        return LogicResult::Invalid;
+                        return LogicalStepResult::Invalid(None);
                     }
                 } else if mask.is_empty() {
-                    return LogicResult::Invalid;
+                    return LogicalStepResult::Invalid(None);
                 }
             }
             if !changed {
                 break;
             } else {
-                result = LogicResult::Changed;
+                result = LogicalStepResult::Changed(None);
             }
         }
 
@@ -68,7 +71,7 @@ mod test {
         let all_naked_singles = AllNakedSingles;
 
         // There should be no naked singles on the initial board
-        assert!(all_naked_singles.step(&mut board, None) == LogicResult::None);
+        assert!(all_naked_singles.run(&mut board, false).is_none());
 
         // Set up the board so that the entire thing solves with just naked singles
         let board_str =
@@ -80,7 +83,7 @@ mod test {
         });
 
         // The board should fully solve with naked singles
-        assert!(all_naked_singles.step(&mut board, None) == LogicResult::Changed);
+        assert!(all_naked_singles.run(&mut board, false).is_changed());
         assert!(board.is_solved());
         assert_eq!(
             board.to_string(),

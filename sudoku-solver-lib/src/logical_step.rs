@@ -2,7 +2,9 @@
 
 pub mod all_naked_singles;
 pub mod hidden_single;
-pub mod macros;
+pub mod logical_step_desc;
+pub mod logical_step_desc_list;
+pub mod logical_step_result;
 pub mod naked_single;
 pub mod prelude;
 pub mod simple_cell_forcing;
@@ -45,16 +47,12 @@ pub trait LogicalStep {
         true
     }
 
-    /// Executes one logical step.
-    ///
-    /// # Arguments
-    /// * `board` - The board to execute the step on.
-    /// * `desc` - If provided, describe any eliminations as a single appended entry to this list.
+    /// Runs one logical step on the board.
     ///
     /// # Return value
     /// Return the following based on the situation:
-    /// - [`LogicResult::None`] if the board is unchanged.
-    /// - [`LogicResult::Changed`] if the board is changed.
-    /// - [`LogicResult::Invalid`] if this constraint has made the solve impossible.
-    fn step(&self, board: &mut Board, desc: Option<&mut LogicalStepDescList>) -> LogicResult;
+    /// - [`LogicalStepResult::None`] if the board is unchanged.
+    /// - [`LogicalStepResult::Changed`] if the board is changed.
+    /// - [`LogicalStepResult::Invalid`] if this constraint has made the solve impossible.
+    fn run(&self, board: &mut Board, generate_description: bool) -> LogicalStepResult;
 }

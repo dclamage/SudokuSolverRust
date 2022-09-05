@@ -467,7 +467,7 @@ impl CellUtility {
         let group_separator = ",";
 
         if cells.is_empty() {
-            return "".to_string();
+            return "".to_owned();
         }
 
         if cells.len() == 1 {

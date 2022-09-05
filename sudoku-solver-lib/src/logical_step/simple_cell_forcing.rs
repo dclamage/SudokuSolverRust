@@ -1,7 +1,5 @@
 use crate::prelude::*;
 
-use super::macros::add_step_with_elims;
-
 /// "Simple Cell Forcing" &is when all candidates remaining in a cell all have a weak link
 /// to the same candidate in another cell. This other candidate can be eliminated.
 pub struct SimpleCellForcing;
@@ -11,7 +9,7 @@ impl LogicalStep for SimpleCellForcing {
         "Simple Cell Forcing"
     }
 
-    fn step(&self, board: &mut Board, mut desc: Option<&mut LogicalStepDescList>) -> LogicResult {
+    fn run(&self, board: &mut Board, generate_description: bool) -> LogicalStepResult {
         let size = board.size();
         let cu = board.cell_utility();
         let bd = board.data();
@@ -46,16 +44,21 @@ impl LogicalStep for SimpleCellForcing {
             }
 
             if !elims.is_empty() {
+                let desc = if generate_description {
+                    let desc = LogicalStepDesc::from_elims(&cell.to_string(), &elims);
+                    Some(desc)
+                } else {
+                    None
+                };
+
                 if !board.clear_candidates(elims.iter()) {
-                    add_step_with_elims!(self, desc, format!("{}", cell), &elims);
-                    return LogicResult::Invalid;
+                    return LogicalStepResult::Invalid(desc);
                 }
-                add_step_with_elims!(self, desc, format!("{}", cell), &elims);
-                return LogicResult::Changed;
+                return LogicalStepResult::Changed(desc);
             }
         }
 
-        LogicResult::None
+        LogicalStepResult::None
     }
 }
 
@@ -88,24 +91,23 @@ mod test {
         let mut board = Board::new(9, &[], &[Arc::new(ExtraWeakLinksConstraint)]);
         let cu = board.cell_utility();
         let simple_cell_forcing = SimpleCellForcing;
-        let mut desc = LogicalStepDescList::new();
 
         // No cell forcing should be possible here
-        let result = simple_cell_forcing.step(&mut board, Some(&mut desc));
-        assert!(result == LogicResult::None);
+        let result = simple_cell_forcing.run(&mut board, true);
+        assert!(result.is_none());
 
         // Remove 9 as a candidate from r1c1
         assert!(board.clear_candidate(cu.candidate(cu.cell(0, 0), 9)));
 
         // Cell forcing should be possible here
-        let result = simple_cell_forcing.step(&mut board, Some(&mut desc));
-        assert_eq!(result, LogicResult::Changed);
+        let result = simple_cell_forcing.run(&mut board, true);
+        assert!(result.is_changed());
 
         // Check that 1 has been eliminated from r1c2
         assert!(!board.cell(cu.cell(0, 1)).has(1));
 
         // Check that the description is correct
-        assert!(desc.len() == 1);
-        assert_eq!(desc.to_string(), "Simple Cell Forcing: r1c1 => -1r1c2");
+        let desc = result.to_string();
+        assert_eq!(desc.to_string(), "r1c1 => -1r1c2");
     }
 }
