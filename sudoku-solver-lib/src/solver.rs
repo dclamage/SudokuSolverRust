@@ -7,11 +7,12 @@ pub mod single_solution_result;
 use itertools::Itertools;
 
 use crate::prelude::*;
-use std::sync::Arc;
+use std::{any::TypeId, sync::Arc};
 
 #[derive(Clone)]
 pub struct Solver {
     board: Board,
+    constraints_initialized: bool,
     logical_solve_steps: Vec<Arc<dyn LogicalStep>>,
     brute_force_steps: Vec<Arc<dyn LogicalStep>>,
 }
@@ -28,26 +29,50 @@ impl Solver {
     pub fn new(
         size: usize,
         regions: &[usize],
-        logical_steps: impl Iterator<Item = Arc<dyn LogicalStep>>,
-        constraints: impl Iterator<Item = Arc<dyn Constraint>>,
+        logical_steps: &[Arc<dyn LogicalStep>],
+        constraints: &[Arc<dyn Constraint>],
     ) -> Solver {
-        let constraints: Vec<_> = constraints.collect();
+        let constraints = constraints.to_vec();
         let board = Board::new(size, regions, &constraints);
-        let mut logical_steps: Vec<_> = logical_steps.collect();
+        let mut logical_steps = logical_steps.to_vec();
         if logical_steps.is_empty() {
             logical_steps = Self::standard_logic();
         } else {
-            // Ensure all the required logical steps are present in the list.
-            // Required steps generally happen first, so they're added to the
-            // front.
-            for required_logic in Self::required_logic() {
-                if !logical_steps
+            // There are two required logical steps which must be present:
+            // 1. AllNakedSingles is used by the brute force solver.
+            // 2. StepConstraints is used to apply constraint logic.
+
+            if !logical_steps
+                .iter()
+                .any(|step| step.type_id() == TypeId::of::<AllNakedSingles>())
+            {
+                // The AllNakedSingles step is required by the brute force solver.
+                // Put it first in the list.
+                logical_steps.insert(0, Arc::new(AllNakedSingles));
+            }
+
+            if !logical_steps
+                .iter()
+                .any(|step| step.type_id() == TypeId::of::<StepConstraints>())
+            {
+                // The StepConstraints step is required to apply constraint logic.
+                // Put it in the list after any singles steps.
+                let naked_single_index = logical_steps
                     .iter()
-                    .any(|l| l.name() == required_logic.name())
-                {
-                    let required_logic_slice = [required_logic];
-                    logical_steps.splice(..0, required_logic_slice.iter().cloned());
-                }
+                    .position(|step| step.type_id() == TypeId::of::<NakedSingle>());
+                let hidden_single_index = logical_steps
+                    .iter()
+                    .position(|step| step.type_id() == TypeId::of::<HiddenSingle>());
+
+                let index = match (naked_single_index, hidden_single_index) {
+                    (Some(naked_single_index), Some(hidden_single_index)) => {
+                        naked_single_index.max(hidden_single_index) + 1
+                    }
+                    (Some(naked_single_index), None) => naked_single_index + 1,
+                    (None, Some(hidden_single_index)) => hidden_single_index + 1,
+                    (None, None) => 0,
+                };
+                logical_steps.insert(index, Arc::new(StepConstraints));
             }
         }
 
@@ -65,13 +90,10 @@ impl Solver {
 
         Solver {
             board,
+            constraints_initialized: false,
             logical_solve_steps,
             brute_force_steps,
         }
-    }
-
-    fn required_logic() -> Vec<Arc<dyn LogicalStep>> {
-        vec![Arc::new(AllNakedSingles), Arc::new(NakedSingle)]
     }
 
     pub fn standard_logic() -> Vec<Arc<dyn LogicalStep>> {
@@ -79,6 +101,7 @@ impl Solver {
             Arc::new(AllNakedSingles),
             Arc::new(HiddenSingle),
             Arc::new(NakedSingle),
+            Arc::new(StepConstraints),
             Arc::new(SimpleCellForcing),
         ]
     }
@@ -148,7 +171,7 @@ impl Solver {
     /// assert_eq!(solver.board().cell(cu.cell(0, 2)).value(), 3);
     /// assert_eq!(solver.board().cell(cu.cell(0, 3)).min(), 4);
     ///
-    /// let mut solver16 = Solver::new(16, &[], std::iter::empty(), std::iter::empty());
+    /// let mut solver16 = Solver::new(16, &[], &[], &[]);
     /// ```
     pub fn set_givens_from_string(&mut self, givens: &str) -> bool {
         let cu = self.board.cell_utility();
@@ -194,11 +217,28 @@ impl Solver {
         }
     }
 
+    /// Initialize the constraints. This should be called after the givens are set (if any).
+    pub fn init_constraints(&mut self) {
+        if self.constraints_initialized {
+            return;
+        }
+
+        let board_data = self.board.data();
+        for constraint in board_data.constraints() {
+            constraint.init_board(&mut self.board);
+        }
+        self.constraints_initialized = true;
+    }
+
     fn run_single_logical_step(&mut self) -> LogicalStepResult {
         for step in self.logical_solve_steps.iter() {
             let step_result = step.run(&mut self.board, true);
             if !step_result.is_none() {
-                return step_result.with_prefix(format!("{}: ", step.name()).as_str());
+                if step.has_own_prefix() {
+                    return step_result;
+                } else {
+                    return step_result.with_prefix(format!("{}: ", step.name()).as_str());
+                }
             }
         }
 
@@ -207,6 +247,8 @@ impl Solver {
 
     /// Run a full logical solve. This mutates the solver's board.
     pub fn run_logical_solve(&mut self) -> LogicalSolveResult {
+        self.init_constraints();
+
         let mut desc_list = LogicalStepDescList::new();
         let mut changed = false;
         loop {
@@ -268,6 +310,11 @@ impl Solver {
     /// The solution is the lexicographically first solution and is not
     /// guaranteed to be the only solution.
     pub fn find_first_solution(&self) -> SingleSolutionResult {
+        assert!(
+            self.constraints_initialized,
+            "Constraints must be initialized before calling find_first_solution."
+        );
+
         let cu = self.cell_utility();
         let mut board_stack = Vec::new();
         board_stack.push((Box::new(self.board.clone()), cu.cell(0, 0)));
@@ -319,17 +366,21 @@ impl Solver {
 
 impl Default for Solver {
     fn default() -> Self {
-        Solver::new(9, &[], std::iter::empty(), std::iter::empty())
+        Solver::new(9, &[], &[], &[])
     }
 }
 
 #[cfg(test)]
 mod test {
+    use itertools::assert_equal;
+
     use super::*;
 
     #[test]
     fn test_first_solution() {
-        let solver = Solver::default();
+        let mut solver = Solver::default();
+        solver.init_constraints();
+
         let result = solver.find_first_solution();
         assert!(result.is_solved());
 
@@ -342,5 +393,27 @@ mod test {
             "123456789456789123789123456214365897365897214897214365531642978642978531978531642"
         );
         println!("Solved: {}", board);
+    }
+
+    #[test]
+    fn test_required_logic() {
+        let solver = Solver::new(9, &[], &[Arc::new(HiddenSingle)], &[]);
+        assert_equal(
+            solver
+                .brute_force_steps()
+                .iter()
+                .map(|s| s.name())
+                .collect::<Vec<_>>(),
+            ["All Naked Singles", "Hidden Single", "Step Constraints"],
+        );
+
+        assert_equal(
+            solver
+                .logical_solve_steps()
+                .iter()
+                .map(|s| s.name())
+                .collect::<Vec<_>>(),
+            ["Hidden Single", "Step Constraints"],
+        );
     }
 }

@@ -16,7 +16,7 @@ use std::vec::Vec;
 /// - [`Constraint::get_weak_links`] can call [`get_weak_links_for_nonrepeat`]
 /// to automatically generate weak links based on the constraint having cells
 /// which cannot repeat a value.
-pub trait Constraint {
+pub trait Constraint: std::any::Any {
     /// A generic name for the constaint which is independent of how it was intialized.
     fn name(&self) -> String;
 
@@ -39,12 +39,13 @@ pub trait Constraint {
     /// It is called on all constraints until all of them return [`LogicalStepResult::None`].
     /// This allows them react to each other and how they may have changed the board.
     ///
-    /// Return the following based on the situation:
+    /// Return the following based on the situation (Description is ignored and can be None):
     /// - [`LogicalStepResult::None`] if the board is unchanged.
     /// - [`LogicalStepResult::Changed`] if the board is changed.
     /// - [`LogicalStepResult::Invalid`] if this constraint has made the solve impossible.
     /// - All other values are treated as [`LogicalStepResult::None`].
-    fn init_board(&self, _board: &mut Board) -> LogicalStepResult {
+    fn init_board(&self, board: &mut Board) -> LogicalStepResult {
+        let _ = board;
         LogicalStepResult::None
     }
 
@@ -63,7 +64,8 @@ pub trait Constraint {
     /// Return the following based on the situation:
     /// - [`LogicalStepResult::None`] if the constraint is not violated.
     /// - [`LogicalStepResult::Invalid`] if the constraint is violated.
-    fn enforce(&self, _board: &Board, _cell: CellIndex, _val: usize) -> LogicalStepResult {
+    fn enforce(&self, board: &Board, cell: CellIndex, val: usize) -> LogicalStepResult {
+        let (_, _, _) = (board, cell, val);
         LogicalStepResult::None
     }
 
@@ -88,7 +90,8 @@ pub trait Constraint {
     /// - [`LogicalStepResult::None`] if the board is unchanged.
     /// - [`LogicalStepResult::Changed`] if the board is changed.
     /// - [`LogicalStepResult::Invalid`] if this constraint can no longer be satisfied.
-    fn step_logic(&self, _board: &mut Board, _is_brute_forcing: bool) -> LogicalStepResult {
+    fn step_logic(&self, board: &mut Board, is_brute_forcing: bool) -> LogicalStepResult {
+        let (_, _) = (board, is_brute_forcing);
         LogicalStepResult::None
     }
 
@@ -97,7 +100,8 @@ pub trait Constraint {
     /// For example, a Killer Cage may determine that there must be a 9 in one of the cells
     /// in order to fulfill the sum. This would return a [`Vec`] of all the cells in the cage
     /// which can still be 9.
-    fn cells_must_contain(&self, _board: &Board, _val: usize) -> Vec<CellIndex> {
+    fn cells_must_contain(&self, board: &Board, val: usize) -> Vec<CellIndex> {
+        let (_, _) = (board, val);
         Vec::new()
     }
 
@@ -172,7 +176,8 @@ pub trait Constraint {
     /// [`crate::cell_utility::CellUtility::candidate_pairs`] is especially useful for this method, which generates all candidates
     /// pairs for all values within a group of cells. Passing in a group of cells which cannot
     /// repeat will generate the needed weak link pairs for that group.
-    fn get_weak_links(&self, _size: usize) -> Vec<(CandidateIndex, CandidateIndex)> {
+    fn get_weak_links(&self, size: usize) -> Vec<(CandidateIndex, CandidateIndex)> {
+        let _ = size;
         Vec::new()
     }
 
@@ -184,7 +189,8 @@ pub trait Constraint {
     /// This method returns a [`Vec`] of [`House`] which are created by the constraint.
     ///
     /// The size of the board is passed in so that the constraint can know the size of the house.
-    fn get_houses(&self, _size: usize) -> Vec<House> {
+    fn get_houses(&self, size: usize) -> Vec<House> {
+        let _ = size;
         Vec::new()
     }
 }

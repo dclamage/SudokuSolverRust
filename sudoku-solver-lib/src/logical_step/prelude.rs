@@ -5,3 +5,4 @@ pub use super::logical_step_desc_list::*;
 pub use super::logical_step_result::*;
 pub use super::naked_single::*;
 pub use super::simple_cell_forcing::*;
+pub use super::step_constraints::*;
