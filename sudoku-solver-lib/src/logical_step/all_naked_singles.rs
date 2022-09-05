@@ -1,11 +1,12 @@
 use crate::prelude::*;
 
-pub struct AllNakedSingles;
-
 /// This logical step finds naked singles until none are found or the board is invalid.
 ///
 /// Generally, this is used during brute force only, when there is no
 /// need for user-facing descriptions.
+#[derive(Debug)]
+pub struct AllNakedSingles;
+
 impl LogicalStep for AllNakedSingles {
     fn name(&self) -> &'static str {
         "All Naked Singles"

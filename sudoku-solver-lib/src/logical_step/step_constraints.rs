@@ -1,6 +1,7 @@
 use crate::prelude::*;
 
 /// Applies constraint-specific logic.
+#[derive(Debug)]
 pub struct StepConstraints;
 
 impl LogicalStep for StepConstraints {
@@ -35,6 +36,7 @@ mod test {
 
     use super::*;
 
+    #[derive(Debug)]
     struct RemoveCandidateConstraint {
         candidate: CandidateIndex,
     }

@@ -1,6 +1,7 @@
 use crate::prelude::*;
 
 /// A "Hidden Single" is when a candidate can appear in only one cell within a house.
+#[derive(Debug)]
 pub struct HiddenSingle;
 
 impl LogicalStep for HiddenSingle {

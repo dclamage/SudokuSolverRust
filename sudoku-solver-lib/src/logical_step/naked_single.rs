@@ -3,6 +3,7 @@ use crate::prelude::*;
 /// A "Naked Single" is when a cell has been reduced to a single candidate.
 ///
 /// This is the simplest logical step and is required for the solver to function.
+#[derive(Debug)]
 pub struct NakedSingle;
 
 impl LogicalStep for NakedSingle {

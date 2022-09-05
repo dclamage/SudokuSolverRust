@@ -2,6 +2,7 @@ use crate::prelude::*;
 
 /// "Simple Cell Forcing" &is when all candidates remaining in a cell all have a weak link
 /// to the same candidate in another cell. This other candidate can be eliminated.
+#[derive(Debug)]
 pub struct SimpleCellForcing;
 
 impl LogicalStep for SimpleCellForcing {
@@ -68,6 +69,7 @@ mod test {
 
     use super::*;
 
+    #[derive(Debug)]
     struct ExtraWeakLinksConstraint;
 
     impl Constraint for ExtraWeakLinksConstraint {

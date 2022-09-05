@@ -16,7 +16,7 @@ use std::vec::Vec;
 /// - [`Constraint::get_weak_links`] can call [`get_weak_links_for_nonrepeat`]
 /// to automatically generate weak links based on the constraint having cells
 /// which cannot repeat a value.
-pub trait Constraint: std::any::Any {
+pub trait Constraint: std::any::Any + core::fmt::Debug {
     /// A generic name for the constaint which is independent of how it was intialized.
     fn name(&self) -> String;
 
@@ -173,7 +173,7 @@ pub trait Constraint: std::any::Any {
     /// to check if a cell has only `1,2` left, which elimiates `1,2` from adjacent cells. The solver
     /// will figure this out itself via cell forcing.
     ///
-    /// [`crate::cell_utility::CellUtility::candidate_pairs`] is especially useful for this method, which generates all candidates
+    /// [`CellUtility::candidate_pairs`] is especially useful for this method, which generates all candidates
     /// pairs for all values within a group of cells. Passing in a group of cells which cannot
     /// repeat will generate the needed weak link pairs for that group.
     fn get_weak_links(&self, size: usize) -> Vec<(CandidateIndex, CandidateIndex)> {
