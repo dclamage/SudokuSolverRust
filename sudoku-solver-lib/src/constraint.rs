@@ -105,6 +105,14 @@ pub trait Constraint: std::any::Any + core::fmt::Debug {
         Vec::new()
     }
 
+    /// Return a vector of cells which are powerful to check early in the solve.
+    ///
+    /// This is used purely for performance reasons. The brute force solver will prefer
+    /// checking these cells over other cells.
+    fn powerful_cells(&self) -> Vec<CellIndex> {
+        Vec::new()
+    }
+
     /// Can be used by [`Constraint::cells_must_contain`] to automatically determine the
     /// answer based on running the [`Constraint::step_logic`] method.
     ///

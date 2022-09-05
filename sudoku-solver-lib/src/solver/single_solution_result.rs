@@ -9,6 +9,8 @@ pub enum SingleSolutionResult {
     None,
     /// A solution was found.
     Solved(Box<Board>),
+    /// There was an error while solving.
+    Error(String),
 }
 
 impl SingleSolutionResult {
@@ -20,9 +22,13 @@ impl SingleSolutionResult {
         matches!(self, SingleSolutionResult::Solved(_))
     }
 
+    pub fn is_error(&self) -> bool {
+        matches!(self, SingleSolutionResult::Error(_))
+    }
+
     pub fn board(&self) -> Option<Box<Board>> {
         match self {
-            SingleSolutionResult::None => None,
+            SingleSolutionResult::None | SingleSolutionResult::Error(_) => None,
             SingleSolutionResult::Solved(board) => Some(board.clone()),
         }
     }
@@ -32,8 +38,10 @@ impl std::fmt::Display for SingleSolutionResult {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         if let Some(board) = self.board() {
             write!(f, "{}", board)
+        } else if let SingleSolutionResult::Error(err) = self {
+            write!(f, "Error: {}", err)
         } else {
-            write!(f, "No solution.")
+            write!(f, "No solution")
         }
     }
 }

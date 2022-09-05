@@ -2,6 +2,8 @@
 
 use std::{fmt, ops::*};
 
+use rand::Rng;
+
 /// A mask of possible values for a cell.
 ///
 /// This is a N-bit mask, where each bit represents a possible value for a cell and N
@@ -682,6 +684,26 @@ impl ValueMask {
     /// ```
     pub fn max(self) -> usize {
         32 - self.value_bits().leading_zeros() as usize
+    }
+
+    /// Get the nth value.
+    pub fn nth(self, index: usize) -> Option<usize> {
+        let mut mask = self.value_bits();
+        for _ in 0..index {
+            mask &= mask - 1;
+        }
+        if mask == 0 {
+            None
+        } else {
+            Some(mask.trailing_zeros() as usize + 1)
+        }
+    }
+
+    /// Get a random value.
+    pub fn random(self) -> usize {
+        let mut rng = rand::thread_rng();
+        let count = rng.gen_range(0..self.count());
+        self.nth(count).unwrap()
     }
 
     /// Get a vector of all values in the mask.

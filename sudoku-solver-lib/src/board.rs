@@ -1,5 +1,7 @@
 //! Contains [`Board`] which represents a Sudoku puzzle's size, constraints, and current solve state.
 
+use itertools::Itertools;
+
 use crate::prelude::*;
 use std::{collections::HashMap, sync::Arc};
 
@@ -32,6 +34,7 @@ pub struct BoardData {
     all_values_mask: ValueMask,
     houses: Vec<Arc<House>>,
     houses_by_cell: Vec<Vec<Arc<House>>>,
+    powerful_cells: Vec<CellIndex>,
     weak_links: Vec<CandidateLinks>,
     total_weak_links: usize,
     constraints: Vec<Arc<dyn Constraint>>,
@@ -203,6 +206,11 @@ impl BoardData {
         let houses = Self::create_houses(size, regions, constraints);
         let houses_by_cell = Self::create_houses_by_cell(size, &houses);
         let weak_links = vec![CandidateLinks::new(size); num_candidates];
+        let powerful_cells = constraints
+            .iter()
+            .flat_map(|c| c.powerful_cells())
+            .unique()
+            .collect();
 
         BoardData {
             size,
@@ -211,6 +219,7 @@ impl BoardData {
             all_values_mask,
             houses,
             houses_by_cell,
+            powerful_cells,
             weak_links,
             total_weak_links: 0,
             constraints: constraints.to_vec(),
@@ -251,6 +260,10 @@ impl BoardData {
 
     pub fn total_weak_links(&self) -> usize {
         self.total_weak_links
+    }
+
+    pub fn powerful_cells(&self) -> &[CellIndex] {
+        &self.powerful_cells
     }
 
     pub fn constraints(&self) -> &[Arc<dyn Constraint>] {

@@ -35,10 +35,15 @@ impl Solver {
         &self.board
     }
 
+    pub fn size(&self) -> usize {
+        self.board.size()
+    }
+
     pub fn cell_utility(&self) -> CellUtility {
         self.board.cell_utility()
     }
 
+    /// Find a single logical step that can be applied to the puzzle.
     pub fn run_single_logical_step(&mut self) -> LogicalStepResult {
         for step in self.logical_solve_steps.iter() {
             let step_result = step.run(&mut self.board, true);
@@ -121,11 +126,7 @@ impl Solver {
         let mut board_stack = Vec::new();
         board_stack.push((Box::new(self.board.clone()), cu.cell(0, 0)));
 
-        loop {
-            if board_stack.is_empty() {
-                break;
-            }
-
+        while !board_stack.is_empty() {
             let (mut board, mut cell) = board_stack.pop().unwrap();
             if !self.run_brute_force_logic(&mut board) {
                 continue;
@@ -164,6 +165,99 @@ impl Solver {
 
         SingleSolutionResult::None
     }
+
+    fn find_best_brute_force_cell(board: &Board) -> Option<CellIndex> {
+        let mut best_cell = None;
+        let mut best_cell_candidate_count = usize::MAX;
+        let board_data = board.data();
+
+        for &cell in board_data.powerful_cells() {
+            let mask = board.cell(cell);
+            if mask.is_solved() {
+                continue;
+            }
+
+            let cell_count = mask.count();
+            if cell_count <= 2 {
+                return Some(cell);
+            }
+            if cell_count < best_cell_candidate_count {
+                best_cell = Some(cell);
+                best_cell_candidate_count = cell_count;
+            }
+        }
+
+        if best_cell.is_some() {
+            return best_cell;
+        }
+
+        for cell in board.all_cells() {
+            let mask = board.cell(cell);
+            if mask.is_solved() {
+                continue;
+            }
+
+            let cell_count = mask.count();
+            if cell_count == 1 {
+                continue;
+            }
+
+            if cell_count == 2 {
+                return Some(cell);
+            }
+
+            if cell_count < best_cell_candidate_count {
+                best_cell = Some(cell);
+                best_cell_candidate_count = cell_count;
+            }
+        }
+
+        best_cell
+    }
+
+    /// Use brute-force methods to find a random solution to the puzzle.
+    /// This can be faster than [`Solver::find_first_solution`] because it
+    /// is not forced to find the lexicographically first solution.
+    ///
+    /// The solution is not guaranteed to be the only solution.
+    pub fn find_random_solution(&self) -> SingleSolutionResult {
+        let mut board_stack = Vec::new();
+        board_stack.push(Box::new(self.board.clone()));
+
+        while !board_stack.is_empty() {
+            let mut board = board_stack.pop().unwrap();
+            if !self.run_brute_force_logic(&mut board) {
+                continue;
+            }
+
+            if board.is_solved() {
+                return SingleSolutionResult::Solved(board);
+            }
+
+            let cell = Self::find_best_brute_force_cell(&board);
+            if let Some(cell) = cell {
+                let mask = board.cell(cell);
+                let value = mask.random();
+
+                // Push a copy of the board onto the stack with the value unset.
+                let mut board_copy = board.clone();
+                if board_copy.clear_value(cell, value) {
+                    board_stack.push(board_copy);
+                }
+
+                // Push a the board onto the stack with the value solved.
+                if board.set_solved(cell, value) {
+                    board_stack.push(board);
+                }
+            } else {
+                return SingleSolutionResult::Error(
+                    "Internal error finding a cell to check.".to_owned(),
+                );
+            }
+        }
+
+        SingleSolutionResult::None
+    }
 }
 
 impl Default for Solver {
@@ -191,6 +285,20 @@ mod test {
             solution,
             "123456789456789123789123456214365897365897214897214365531642978642978531978531642"
         );
-        println!("Solved: {}", board);
+    }
+
+    #[test]
+    fn test_random_solution() {
+        let solver = Solver::default();
+
+        let result = solver.find_random_solution();
+        assert!(result.is_solved());
+
+        let board = result.board().unwrap();
+        assert!(board.is_solved());
+
+        let solution = board.to_string();
+        assert!(solution.len() == 81);
+        assert!(!solution.chars().any(|c| c < '1' || c > '9'));
     }
 }
