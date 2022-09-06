@@ -3,7 +3,11 @@
 pub mod logical_solve_result;
 pub mod prelude;
 pub mod single_solution_result;
+pub mod solution_count_result;
+pub mod solution_receiver;
 pub mod solver_builder;
+
+use itertools::Itertools;
 
 use crate::prelude::*;
 use std::sync::Arc;
@@ -215,14 +219,9 @@ impl Solver {
         best_cell
     }
 
-    /// Use brute-force methods to find a random solution to the puzzle.
-    /// This can be faster than [`Solver::find_first_solution`] because it
-    /// is not forced to find the lexicographically first solution.
-    ///
-    /// The solution is not guaranteed to be the only solution.
-    pub fn find_random_solution(&self) -> SingleSolutionResult {
+    fn find_random_solution_for_board(&self, board: &Board) -> SingleSolutionResult {
         let mut board_stack = Vec::new();
-        board_stack.push(Box::new(self.board.clone()));
+        board_stack.push(Box::new(board.clone()));
 
         while !board_stack.is_empty() {
             let mut board = board_stack.pop().unwrap();
@@ -257,6 +256,128 @@ impl Solver {
         }
 
         SingleSolutionResult::None
+    }
+    /// Use brute-force methods to find a random solution to the puzzle.
+    /// This can be faster than [`Solver::find_first_solution`] because it
+    /// is not forced to find the lexicographically first solution.
+    ///
+    /// The solution is not guaranteed to be the only solution.
+    pub fn find_random_solution(&self) -> SingleSolutionResult {
+        self.find_random_solution_for_board(&self.board)
+    }
+
+    /// Using brute force methods, return a board with only candidates which lead to a valid solution to the puzzle.
+    /// These candidates are guaranteed to lead to at least one solution if given.
+    pub fn find_true_candidates(&self) -> SingleSolutionResult {
+        let mut board = Box::new(self.board.clone());
+
+        // Run the brute force logic to remove trivially invalid candidates.
+        if !self.run_brute_force_logic(&mut board) {
+            return SingleSolutionResult::None;
+        }
+
+        if board.is_solved() {
+            return SingleSolutionResult::Solved(board);
+        }
+
+        let mut true_cell_values = board
+            .all_cells()
+            .map(|cell| {
+                let mask = board.cell(cell);
+                if mask.is_solved() {
+                    mask
+                } else {
+                    ValueMask::new()
+                }
+            })
+            .collect_vec();
+
+        for (cell, mask) in board.all_cell_masks() {
+            if mask.is_solved() {
+                continue;
+            }
+
+            let mask = mask & !true_cell_values[cell.index()];
+            for value in mask {
+                let mut new_board = board.clone();
+                if !new_board.set_solved(cell, value) {
+                    continue;
+                }
+
+                let solution_result = self.find_random_solution_for_board(&new_board);
+                if let SingleSolutionResult::Solved(solution) = solution_result {
+                    for (cell, mask) in solution.all_cell_masks() {
+                        true_cell_values[cell.index()] =
+                            true_cell_values[cell.index()] | mask.unsolved();
+                    }
+                }
+            }
+        }
+
+        for cell in board.all_cells() {
+            if !board.keep_mask(cell, true_cell_values[cell.index()]) {
+                return SingleSolutionResult::None;
+            }
+        }
+
+        if AllNakedSingles.run(&mut board, false).is_invalid() {
+            return SingleSolutionResult::None;
+        }
+
+        SingleSolutionResult::Solved(board)
+    }
+
+    // Find the solution count of the puzzle via brute force with an optional receiver for each solution.
+    pub fn find_solution_count(
+        &self,
+        maximum_count: usize,
+        mut solution_receiver: Option<&mut dyn SolutionReceiver>,
+    ) -> SolutionCountResult {
+        let mut board_stack = Vec::new();
+        board_stack.push(Box::new(self.board.clone()));
+
+        let mut solution_count = 0;
+
+        while !board_stack.is_empty() {
+            let mut board = board_stack.pop().unwrap();
+            if !self.run_brute_force_logic(&mut board) {
+                continue;
+            }
+
+            if board.is_solved() {
+                if let Some(ref mut solution_receiver) = solution_receiver {
+                    solution_receiver.receive(board);
+                }
+
+                solution_count += 1;
+                if solution_count >= maximum_count {
+                    return SolutionCountResult::AtLeastCount(solution_count);
+                }
+                continue;
+            }
+
+            let cell = Self::find_best_brute_force_cell(&board);
+            if let Some(cell) = cell {
+                let mask = board.cell(cell);
+                for value in mask {
+                    // Push a copy of the board onto the stack with each value set.
+                    let mut board_copy = board.clone();
+                    if board_copy.set_solved(cell, value) {
+                        board_stack.push(board_copy);
+                    }
+                }
+            } else {
+                return SolutionCountResult::Error(
+                    "Internal error finding a cell to check.".to_owned(),
+                );
+            }
+        }
+
+        if solution_count == 0 {
+            SolutionCountResult::None
+        } else {
+            SolutionCountResult::ExactCount(solution_count)
+        }
     }
 }
 
@@ -300,5 +421,148 @@ mod test {
         let solution = board.to_string();
         assert!(solution.len() == 81);
         assert!(!solution.chars().any(|c| c < '1' || c > '9'));
+    }
+
+    #[test]
+    fn test_true_candidates() {
+        let solver = Solver::default();
+
+        let result = solver.find_true_candidates();
+        assert!(result.is_solved());
+        assert!(result
+            .board()
+            .unwrap()
+            .all_cell_masks()
+            .all(|(_, mask)| mask.count() == 9));
+
+        // Test phistomefel ring
+        let solver = SolverBuilder::default()
+            .with_givens_string(
+                "....................23456....4...2....5...3....6...4....74365....................",
+            )
+            .build()
+            .unwrap();
+        let result = solver.find_true_candidates();
+        assert!(result.is_solved());
+        let board = result.board().unwrap();
+        assert!(!board.is_solved());
+
+        let cu = board.cell_utility();
+        assert!(board.cell(cu.cell(0, 0)) == ValueMask::from_values(&[3, 4, 5, 6, 7]));
+        assert!(board.cell(cu.cell(0, 1)) == ValueMask::from_values(&[3, 4, 5, 6, 7]));
+        assert!(board.cell(cu.cell(1, 0)) == ValueMask::from_values(&[3, 4, 5, 6, 7]));
+        assert!(board.cell(cu.cell(1, 1)) == ValueMask::from_values(&[3, 4, 5, 6, 7]));
+        assert!(board.cell(cu.cell(7, 0)) == ValueMask::from_values(&[2, 3, 4, 5, 6]));
+        assert!(board.cell(cu.cell(7, 1)) == ValueMask::from_values(&[2, 3, 4, 5, 6]));
+        assert!(board.cell(cu.cell(8, 0)) == ValueMask::from_values(&[2, 3, 4, 5, 6]));
+        assert!(board.cell(cu.cell(8, 1)) == ValueMask::from_values(&[2, 3, 4, 5, 6]));
+        assert!(board.cell(cu.cell(7, 7)) == ValueMask::from_values(&[2, 3, 4, 6, 7]));
+        assert!(board.cell(cu.cell(7, 8)) == ValueMask::from_values(&[2, 3, 4, 6, 7]));
+        assert!(board.cell(cu.cell(8, 7)) == ValueMask::from_values(&[2, 3, 4, 6, 7]));
+        assert!(board.cell(cu.cell(7, 8)) == ValueMask::from_values(&[2, 3, 4, 6, 7]));
+    }
+
+    struct TestSolutionReceiver {
+        solutions: Vec<Box<Board>>,
+    }
+
+    impl TestSolutionReceiver {
+        fn new() -> Self {
+            TestSolutionReceiver {
+                solutions: Vec::new(),
+            }
+        }
+    }
+
+    impl SolutionReceiver for TestSolutionReceiver {
+        fn receive(&mut self, board: Box<Board>) {
+            self.solutions.push(board);
+        }
+    }
+
+    #[test]
+    fn test_solution_count() {
+        let solver = SolverBuilder::default().build().unwrap();
+        let result = solver.find_solution_count(100, None);
+        assert!(result.is_at_least_count());
+        assert!(result.count().unwrap() >= 100);
+
+        let solver = SolverBuilder::default()
+            .with_givens_string(
+                "........1....23.4.....452....1.3.....3...4...6..7....8..6.....9.5....62.7.9...1..",
+            )
+            .build()
+            .unwrap();
+        let result = solver.find_solution_count(100, None);
+        assert!(result.is_exact_count());
+        assert_eq!(result.count().unwrap(), 1);
+
+        let solver = SolverBuilder::default()
+            .with_givens_string(
+                ".............23.4.....452....1.3.....3...4...6..7....8..6.....9.5....62.7.9...1..",
+            )
+            .build()
+            .unwrap();
+        let result = solver.find_solution_count(10000, None);
+        assert!(result.is_exact_count());
+        assert_eq!(result.count().unwrap(), 2357);
+
+        let solver = SolverBuilder::default()
+            .with_givens_string(
+                "1...................23456....4...2....5...3....6...4....74365....................",
+            )
+            .build()
+            .unwrap();
+        let result = solver.find_solution_count(2, None);
+        assert!(result.is_none());
+
+        let mut receiver = TestSolutionReceiver::new();
+        let solver = SolverBuilder::default()
+            .with_givens_string(
+                "8...62..1.5.....7..197...5........9.....28..3.....36.54...1..6...74...3.5.2......",
+            )
+            .build()
+            .unwrap();
+        let result = solver.find_solution_count(100, Some(&mut receiver));
+        assert!(result.is_exact_count());
+        assert_eq!(result.count().unwrap(), 2);
+        assert_eq!(receiver.solutions.len(), 2);
+        assert!(receiver.solutions.iter().any(|b| b.to_string() == "873562941654891372219734856326157498945628713781943625438219567167485239592376184"));
+        assert!(receiver.solutions.iter().any(|b| b.to_string() == "873562941254891376619734852326157498945628713781943625438219567167485239592376184"));
+    }
+
+    #[test]
+    fn test_single_logical_step() {
+        let mut solver = SolverBuilder::default()
+            .with_givens_string(
+                "8...62..125.....7..197...5........9.....28..3.....36.54...1..6...74...3.5.2......",
+            )
+            .build()
+            .unwrap();
+        let result = solver.run_single_logical_step();
+        assert!(result.is_changed());
+        let desc = result.description().unwrap();
+        assert!(desc.to_string().contains("Single"));
+    }
+
+    #[test]
+    fn test_logical_solve() {
+        let mut solver = SolverBuilder::default()
+            .with_givens_string(
+                "8...62..125.....7..197...5........9.....28..3.....36.54...1..6...74...3.5.2......",
+            )
+            .build()
+            .unwrap();
+        let result = solver.run_logical_solve();
+        assert!(result.is_solved());
+        let desc = result.description().unwrap();
+        assert_eq!(desc.len(), 56);
+
+        let board = solver.board();
+        assert!(board.is_solved());
+        assert_eq!(
+            board.to_string(),
+            "873562941254891376619734852326157498945628713781943625438219567167485239592376184"
+        );
     }
 }

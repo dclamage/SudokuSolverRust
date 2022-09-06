@@ -1,4 +1,4 @@
-//! Contains [`SingleSolutionResult`] for storing the result of running multiple logical steps.
+//! Contains [`SingleSolutionResult`] for storing the result of finding a single solution.
 
 use crate::prelude::*;
 

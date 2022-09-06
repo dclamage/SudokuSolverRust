@@ -124,6 +124,10 @@ impl Board {
         self.cell_utility().all_cells()
     }
 
+    pub fn all_cell_masks(&self) -> impl Iterator<Item = (CellIndex, ValueMask)> + '_ {
+        self.all_cells().map(move |cell| (cell, self.cell(cell)))
+    }
+
     pub fn has_candidate(&self, candidate: CandidateIndex) -> bool {
         let (cell, val) = candidate.cell_index_and_value();
         self.cell(cell).has(val)
@@ -148,6 +152,12 @@ impl Board {
             }
         }
         valid
+    }
+
+    pub fn keep_mask(&mut self, cell: CellIndex, mask: ValueMask) -> bool {
+        let cell = cell.index();
+        self.board[cell] = self.board[cell] & mask;
+        !self.board[cell].is_empty()
     }
 
     pub fn set_solved(&mut self, cell: CellIndex, value: usize) -> bool {
