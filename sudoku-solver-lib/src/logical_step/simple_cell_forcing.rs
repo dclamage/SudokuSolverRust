@@ -110,6 +110,6 @@ mod test {
 
         // Check that the description is correct
         let desc = result.to_string();
-        assert_eq!(desc.to_string(), "r1c1 => -1r1c2");
+        assert_eq!(desc, "r1c1 => -1r1c2");
     }
 }

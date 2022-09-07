@@ -20,12 +20,14 @@ impl ChessConstraint {
 
     /// Creates a new [`ChessConstraint`] with the symmetric offsets.
     pub fn from_symmetric_offset(specific_name: &str, offset: (isize, isize)) -> Self {
-        let mut offsets = Vec::new();
-        offsets.push(offset);
-        offsets.push((-offset.0, offset.1));
-        offsets.push((offset.0, -offset.1));
-        offsets.push((-offset.0, -offset.1));
+        let mut offsets = vec![
+            offset,
+            (-offset.0, offset.1),
+            (offset.0, -offset.1),
+            (-offset.0, -offset.1),
+        ];
         if offset.0.abs() != offset.1.abs() {
+            offsets.reserve(4);
             offsets.push((offset.1, offset.0));
             offsets.push((offset.1, -offset.0));
             offsets.push((-offset.1, offset.0));

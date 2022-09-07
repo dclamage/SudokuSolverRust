@@ -548,7 +548,7 @@ mod test {
 
         let solution = board.to_string();
         assert!(solution.len() == 81);
-        assert!(!solution.chars().any(|c| c < '1' || c > '9'));
+        assert!(!solution.chars().any(|c| !('1'..='9').contains(&c)));
     }
 
     #[test]

@@ -326,7 +326,7 @@ mod test {
         // Check that the created board has all the expected defaults.
         assert_eq!(board.size(), 9);
         assert_eq!(board.solved_count(), 0);
-        assert_eq!(board.is_solved(), false);
+        assert!(!board.is_solved());
         assert_eq!(board.houses().len(), 27);
         assert_eq!(board.constraints().len(), 0);
     }
@@ -339,7 +339,7 @@ mod test {
         // Check that the created board has all the expected info.
         assert_eq!(board.size(), 9);
         assert_eq!(board.solved_count(), 0);
-        assert_eq!(board.is_solved(), false);
+        assert!(!board.is_solved());
         assert_eq!(board.houses().len(), 18);
         assert_eq!(board.constraints().len(), 0);
     }
