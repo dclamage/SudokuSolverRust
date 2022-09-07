@@ -1,5 +1,6 @@
 [workspace]
 members = [
   "sudoku-solver-console",
+  "standard-constraints",
   "sudoku-solver-lib"
 ]

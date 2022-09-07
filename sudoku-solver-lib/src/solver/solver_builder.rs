@@ -221,13 +221,13 @@ impl SolverBuilder {
                     if let Some(desc) = desc {
                         return Err(format!(
                             "{} has found the board is invalid: {}",
-                            constraint.specific_name(),
+                            constraint.name(),
                             desc
                         ));
                     } else {
                         return Err(format!(
                             "{} has found the board is invalid.",
-                            constraint.specific_name()
+                            constraint.name()
                         ));
                     }
                 } else if result.is_changed() {

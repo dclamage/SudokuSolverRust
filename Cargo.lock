@@ -101,6 +101,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "standard-constraints"
+version = "0.1.0"
+dependencies = [
+ "sudoku-solver-lib",
+]
+
+[[package]]
 name = "sudoku-solver-console"
 version = "0.1.0"
 dependencies = [

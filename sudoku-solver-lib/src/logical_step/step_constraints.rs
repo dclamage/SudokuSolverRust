@@ -22,7 +22,7 @@ impl LogicalStep for StepConstraints {
         for constraint in board_data.constraints() {
             let result = constraint.step_logic(board, !generate_description);
             if !result.is_none() {
-                return result.with_prefix(format!("{}: ", constraint.specific_name()).as_str());
+                return result.with_prefix(format!("{}: ", constraint.name()).as_str());
             }
         }
 
@@ -38,16 +38,22 @@ mod test {
 
     #[derive(Debug)]
     struct RemoveCandidateConstraint {
+        specific_name: String,
         candidate: CandidateIndex,
     }
 
-    impl Constraint for RemoveCandidateConstraint {
-        fn name(&self) -> String {
-            "Remove Candidate".to_string()
+    impl RemoveCandidateConstraint {
+        fn new(candidate: CandidateIndex) -> Self {
+            Self {
+                specific_name: format!("Remove {}", candidate),
+                candidate,
+            }
         }
+    }
 
-        fn specific_name(&self) -> String {
-            format!("Remove {}", self.candidate)
+    impl Constraint for RemoveCandidateConstraint {
+        fn name(&self) -> &str {
+            &self.specific_name
         }
 
         fn step_logic(&self, board: &mut Board, _generate_description: bool) -> LogicalStepResult {
@@ -74,12 +80,8 @@ mod test {
             size,
             &[],
             &[
-                Arc::new(RemoveCandidateConstraint {
-                    candidate: candidate1,
-                }),
-                Arc::new(RemoveCandidateConstraint {
-                    candidate: candidate2,
-                }),
+                Arc::new(RemoveCandidateConstraint::new(candidate1)),
+                Arc::new(RemoveCandidateConstraint::new(candidate2)),
             ],
         );
         let step_constraints = StepConstraints;
@@ -117,12 +119,8 @@ mod test {
             size,
             &[],
             &[
-                Arc::new(RemoveCandidateConstraint {
-                    candidate: candidate1,
-                }),
-                Arc::new(RemoveCandidateConstraint {
-                    candidate: candidate2,
-                }),
+                Arc::new(RemoveCandidateConstraint::new(candidate1)),
+                Arc::new(RemoveCandidateConstraint::new(candidate2)),
             ],
         );
 

@@ -73,8 +73,8 @@ mod test {
     struct ExtraWeakLinksConstraint;
 
     impl Constraint for ExtraWeakLinksConstraint {
-        fn name(&self) -> String {
-            "Test Extra Weak Links".to_owned()
+        fn name(&self) -> &str {
+            "Test Extra Weak Links"
         }
 
         fn get_weak_links(&self, size: usize) -> Vec<(CandidateIndex, CandidateIndex)> {

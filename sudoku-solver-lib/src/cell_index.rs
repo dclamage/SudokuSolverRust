@@ -127,6 +127,26 @@ impl CellIndex {
         }
     }
 
+    /// Gets the lexicographically previous [`CellIndex`], if any.
+    pub fn prev_cell(self) -> Option<Self> {
+        if self.index > 0 {
+            Some(Self::new(self.index - 1, self.size))
+        } else {
+            None
+        }
+    }
+
+    /// Gets the cell offset by the given amount, if it is valid.
+    pub fn offset(self, offset_row: isize, offset_col: isize) -> Option<Self> {
+        let row = self.row() as isize + offset_row;
+        let col = self.column() as isize + offset_col;
+        if row >= 0 && row < self.size as isize && col >= 0 && col < self.size as isize {
+            Some(Self::from_rc(row as usize, col as usize, self.size))
+        } else {
+            None
+        }
+    }
+
     /// Gets the taxicab distance between two cells.
     ///
     /// # Example

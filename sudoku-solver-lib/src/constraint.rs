@@ -18,13 +18,7 @@ use std::vec::Vec;
 /// which cannot repeat a value.
 pub trait Constraint: std::any::Any + core::fmt::Debug {
     /// A generic name for the constaint which is independent of how it was intialized.
-    fn name(&self) -> String;
-
-    /// Override if there is a more specific name for this constraint instance,
-    /// such as "Killer Cage at r1c1".
-    fn specific_name(&self) -> String {
-        self.name()
-    }
+    fn name(&self) -> &str;
 
     /// Called when the board is initially created to give the constraint the opportunity
     /// to do obvious modifications to the board based on the constraint which the end-user
