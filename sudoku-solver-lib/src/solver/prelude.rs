@@ -3,3 +3,4 @@ pub use super::single_solution_result::*;
 pub use super::solution_count_result::*;
 pub use super::solution_receiver::*;
 pub use super::solver_builder::*;
+pub use super::true_candidates_count_result::*;

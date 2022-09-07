@@ -424,6 +424,20 @@ impl Default for Board {
     }
 }
 
+impl std::hash::Hash for Board {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.board.hash(state);
+    }
+}
+
+impl PartialEq for Board {
+    fn eq(&self, other: &Self) -> bool {
+        self.board == other.board
+    }
+}
+
+impl Eq for Board {}
+
 impl std::fmt::Display for Board {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         for cell in self.all_cells() {

@@ -6,11 +6,12 @@ pub mod single_solution_result;
 pub mod solution_count_result;
 pub mod solution_receiver;
 pub mod solver_builder;
+pub mod true_candidates_count_result;
 
 use itertools::Itertools;
 
 use crate::prelude::*;
-use std::sync::Arc;
+use std::{collections::HashSet, sync::Arc};
 
 /// The main entry point for solving a puzzle.
 ///
@@ -327,14 +328,129 @@ impl Solver {
         SingleSolutionResult::Solved(board)
     }
 
-    // Find the solution count of the puzzle via brute force with an optional receiver for each solution.
-    pub fn find_solution_count(
+    /// Using brute force methods, return a board with only candidates which lead to a valid solution to the puzzle.
+    /// These candidates are guaranteed to lead to at least one solution if given.
+    pub fn find_true_candidates_with_count(
         &self,
+        maximum_count: usize,
+    ) -> TrueCandidatesCountResult {
+        let mut board = Box::new(self.board.clone());
+        let size = board.size();
+        let num_candidates = size * size * size;
+
+        // Run the brute force logic to remove trivially invalid candidates.
+        if !self.run_brute_force_logic(&mut board) {
+            return TrueCandidatesCountResult::None;
+        }
+
+        if board.is_solved() {
+            return TrueCandidatesCountResult::Solved(board);
+        }
+
+        struct TrueCandidatesCountReceiver {
+            true_cell_values: Vec<ValueMask>,
+            num_solutions_per_candidate: Vec<usize>,
+            solutions_seen: HashSet<Box<Board>>,
+            maximum_count: usize,
+            candidate: CandidateIndex,
+        }
+
+        impl SolutionReceiver for TrueCandidatesCountReceiver {
+            fn receive(&mut self, board: Box<Board>) -> bool {
+                if self.solutions_seen.contains(board.as_ref()) {
+                    return true;
+                }
+
+                for (cell, mask) in board.all_cell_masks() {
+                    self.true_cell_values[cell.index()] =
+                        self.true_cell_values[cell.index()] | mask.unsolved();
+                    let candidate_index = cell.candidate(mask.value());
+                    self.num_solutions_per_candidate[candidate_index.index()] += 1;
+                }
+                self.solutions_seen.insert(board);
+
+                self.num_solutions_per_candidate[self.candidate.index()] < self.maximum_count
+            }
+        }
+
+        let true_cell_values = board
+            .all_cells()
+            .map(|cell| {
+                let mask = board.cell(cell);
+                if mask.is_solved() {
+                    mask
+                } else {
+                    ValueMask::new()
+                }
+            })
+            .collect_vec();
+
+        let mut solution_receiver = TrueCandidatesCountReceiver {
+            true_cell_values,
+            num_solutions_per_candidate: vec![0; num_candidates],
+            solutions_seen: HashSet::new(),
+            maximum_count,
+            candidate: CandidateIndex::new(0, size),
+        };
+
+        for (cell, mask) in board.all_cell_masks() {
+            if mask.is_solved() {
+                continue;
+            }
+
+            let mask = mask;
+            for value in mask {
+                let cur_candidate = cell.candidate(value);
+                let cur_candidate_count =
+                    solution_receiver.num_solutions_per_candidate[cur_candidate.index()];
+                if cur_candidate_count >= maximum_count {
+                    continue;
+                }
+                let count_needed = maximum_count - cur_candidate_count;
+
+                let mut new_board = board.clone();
+                if !new_board.set_solved(cell, value) {
+                    continue;
+                }
+
+                solution_receiver.candidate = cur_candidate;
+                self.find_solution_count_for_board(
+                    &new_board,
+                    count_needed,
+                    Some(&mut solution_receiver),
+                );
+            }
+        }
+
+        let true_cell_values = solution_receiver.true_cell_values;
+        for cell in board.all_cells() {
+            if !board.keep_mask(cell, true_cell_values[cell.index()]) {
+                return TrueCandidatesCountResult::None;
+            }
+        }
+
+        if AllNakedSingles.run(&mut board, false).is_invalid() {
+            return TrueCandidatesCountResult::None;
+        }
+
+        if board.is_solved() {
+            TrueCandidatesCountResult::Solved(board)
+        } else {
+            TrueCandidatesCountResult::Candidates(
+                board,
+                solution_receiver.num_solutions_per_candidate,
+            )
+        }
+    }
+
+    fn find_solution_count_for_board(
+        &self,
+        board: &Board,
         maximum_count: usize,
         mut solution_receiver: Option<&mut dyn SolutionReceiver>,
     ) -> SolutionCountResult {
         let mut board_stack = Vec::new();
-        board_stack.push(Box::new(self.board.clone()));
+        board_stack.push(Box::new(board.clone()));
 
         let mut solution_count = 0;
 
@@ -345,11 +461,14 @@ impl Solver {
             }
 
             if board.is_solved() {
+                solution_count += 1;
+
                 if let Some(ref mut solution_receiver) = solution_receiver {
-                    solution_receiver.receive(board);
+                    if !solution_receiver.receive(board) {
+                        return SolutionCountResult::AtLeastCount(solution_count);
+                    }
                 }
 
-                solution_count += 1;
                 if solution_count >= maximum_count {
                     return SolutionCountResult::AtLeastCount(solution_count);
                 }
@@ -378,6 +497,15 @@ impl Solver {
         } else {
             SolutionCountResult::ExactCount(solution_count)
         }
+    }
+
+    // Find the solution count of the puzzle via brute force with an optional receiver for each solution.
+    pub fn find_solution_count(
+        &self,
+        maximum_count: usize,
+        solution_receiver: Option<&mut dyn SolutionReceiver>,
+    ) -> SolutionCountResult {
+        self.find_solution_count_for_board(&self.board, maximum_count, solution_receiver)
     }
 }
 
@@ -462,22 +590,37 @@ mod test {
         assert!(board.cell(cu.cell(7, 8)) == ValueMask::from_values(&[2, 3, 4, 6, 7]));
     }
 
-    struct TestSolutionReceiver {
-        solutions: Vec<Box<Board>>,
-    }
+    #[test]
+    fn test_true_candidates_with_count() {
+        let solver = SolverBuilder::default()
+            .with_givens_string(
+                "1...2..4...7...3...6..1..5..7......4.4.5.9..6.....8.3.4..2.........5.....8...6.7.",
+            )
+            .build()
+            .unwrap();
+        let result = solver.find_true_candidates_with_count(8);
+        assert!(result.is_candidates());
+        let board = result.board().unwrap();
+        let cu = board.cell_utility();
+        assert_eq!(
+            board.cell(cu.cell(0, 1)),
+            ValueMask::from_values(&[3, 5, 9])
+        );
+        assert_eq!(board.cell(cu.cell(1, 5)), ValueMask::from_values(&[4, 5]));
 
-    impl TestSolutionReceiver {
-        fn new() -> Self {
-            TestSolutionReceiver {
-                solutions: Vec::new(),
-            }
-        }
-    }
+        let candidates = result.candidate_counts().unwrap();
+        assert_eq!(candidates.len(), 9 * 9 * 9);
 
-    impl SolutionReceiver for TestSolutionReceiver {
-        fn receive(&mut self, board: Box<Board>) {
-            self.solutions.push(board);
-        }
+        let candidate3r1c2 = cu.cell(0, 1).candidate(3);
+        let candidate5r1c2 = cu.cell(0, 1).candidate(5);
+        let candidate3r1c6 = cu.cell(0, 5).candidate(3);
+        let candidate5r2c6 = cu.cell(1, 5).candidate(5);
+        let candidate4r8c6 = cu.cell(7, 5).candidate(4);
+        assert!(candidates[candidate3r1c2.index()] >= 8);
+        assert_eq!(candidates[candidate5r1c2.index()], 2);
+        assert_eq!(candidates[candidate3r1c6.index()], 2);
+        assert_eq!(candidates[candidate5r2c6.index()], 2);
+        assert_eq!(candidates[candidate4r8c6.index()], 2);
     }
 
     #[test]
@@ -516,7 +659,7 @@ mod test {
         let result = solver.find_solution_count(2, None);
         assert!(result.is_none());
 
-        let mut receiver = TestSolutionReceiver::new();
+        let mut receiver = VecSolutionReceiver::new();
         let solver = SolverBuilder::default()
             .with_givens_string(
                 "8...62..1.5.....7..197...5........9.....28..3.....36.54...1..6...74...3.5.2......",
@@ -526,9 +669,11 @@ mod test {
         let result = solver.find_solution_count(100, Some(&mut receiver));
         assert!(result.is_exact_count());
         assert_eq!(result.count().unwrap(), 2);
-        assert_eq!(receiver.solutions.len(), 2);
-        assert!(receiver.solutions.iter().any(|b| b.to_string() == "873562941654891372219734856326157498945628713781943625438219567167485239592376184"));
-        assert!(receiver.solutions.iter().any(|b| b.to_string() == "873562941254891376619734852326157498945628713781943625438219567167485239592376184"));
+
+        let solutions = receiver.take_solutions();
+        assert_eq!(solutions.len(), 2);
+        assert!(solutions.iter().any(|b| b.to_string() == "873562941654891372219734856326157498945628713781943625438219567167485239592376184"));
+        assert!(solutions.iter().any(|b| b.to_string() == "873562941254891376619734852326157498945628713781943625438219567167485239592376184"));
     }
 
     #[test]
