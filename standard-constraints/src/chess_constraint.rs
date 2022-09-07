@@ -22,17 +22,13 @@ impl ChessConstraint {
     pub fn from_symmetric_offset(specific_name: &str, offset: (isize, isize)) -> Self {
         let mut offsets = Vec::new();
         offsets.push(offset);
-        offsets.push((offset.1, offset.0));
-        if offset.0 != 0 {
-            offsets.push((-offset.0, offset.1));
+        offsets.push((-offset.0, offset.1));
+        offsets.push((offset.0, -offset.1));
+        offsets.push((-offset.0, -offset.1));
+        if offset.0.abs() != offset.1.abs() {
+            offsets.push((offset.1, offset.0));
             offsets.push((offset.1, -offset.0));
-        }
-        if offset.1 != 0 {
-            offsets.push((offset.0, -offset.1));
             offsets.push((-offset.1, offset.0));
-        }
-        if offset.0 != 0 && offset.1 != 0 {
-            offsets.push((-offset.0, -offset.1));
             offsets.push((-offset.1, -offset.0));
         }
         Self::new(specific_name, offsets)
