@@ -104,6 +104,7 @@ dependencies = [
 name = "standard-constraints"
 version = "0.1.0"
 dependencies = [
+ "itertools",
  "sudoku-solver-lib",
 ]
 

@@ -7,3 +7,4 @@ edition = "2021"
 
 [dependencies]
 sudoku-solver-lib = { path="../sudoku-solver-lib" }
+itertools = "0.10.3"

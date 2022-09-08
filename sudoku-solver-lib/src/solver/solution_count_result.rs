@@ -1,6 +1,7 @@
 //! Contains the [SolutionCountResult] enum.
 
 /// The result of running a solve that returns the number of solutions.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum SolutionCountResult {
     None,
     ExactCount(usize),
