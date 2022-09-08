@@ -116,4 +116,25 @@ mod test {
         assert!(solution_count.is_exact_count());
         assert_eq!(solution_count.count().unwrap(), 4);
     }
+
+    #[test]
+    fn test_minimal_anti_knight() {
+        let puzzles = [
+            "................1.....................2.......3.4.......5.6.......7.........8....",
+            "..........................................1.....2.3.4...5.6.7.......8............",
+            "..........................................1.....2.3.....4.5.6.7.....8............",
+            "..........................................1.....2.3.....4.5.6.7.......8..........",
+        ];
+        for puzzle in puzzles {
+            let solver = SolverBuilder::default()
+                .with_constraint(Arc::new(ChessConstraint::anti_knight()))
+                .with_givens_string(puzzle)
+                .build()
+                .unwrap();
+
+            let solution_count = solver.find_solution_count(10000, None);
+            assert!(solution_count.is_exact_count());
+            assert_eq!(solution_count.count().unwrap(), 1);
+        }
+    }
 }
