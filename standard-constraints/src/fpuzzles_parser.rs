@@ -13,6 +13,7 @@ use crate::prelude::*;
 use sudoku_solver_lib::prelude::*;
 
 /// A utility struct for parsing the f-puzzles format.
+#[derive(Clone, Debug)]
 pub struct FPuzzlesParser {
     parse_cell_regex: Regex,
 }
@@ -48,10 +49,10 @@ impl FPuzzlesParser {
                     givens.push((cell, entry.value as usize));
                 }
 
-                if entry.given_pencil_marks.len() > 0
-                    || treat_pencilmarks_as_given && entry.center_pencil_marks.len() > 0
+                if !entry.given_pencil_marks.is_empty()
+                    || treat_pencilmarks_as_given && !entry.center_pencil_marks.is_empty()
                 {
-                    let mut pencilmarks = if entry.given_pencil_marks.len() > 0 {
+                    let mut pencilmarks = if !entry.given_pencil_marks.is_empty() {
                         let given_pencil_marks: Vec<usize> = entry
                             .given_pencil_marks
                             .iter()
@@ -61,16 +62,13 @@ impl FPuzzlesParser {
                     } else {
                         all_values_mask
                     };
-                    if treat_pencilmarks_as_given {
-                        if entry.center_pencil_marks.len() > 0 {
-                            let center_pencil_marks: Vec<usize> = entry
-                                .center_pencil_marks
-                                .iter()
-                                .map(|x| *x as usize)
-                                .collect();
-                            pencilmarks =
-                                pencilmarks & ValueMask::from_values(&center_pencil_marks);
-                        }
+                    if treat_pencilmarks_as_given && !entry.center_pencil_marks.is_empty() {
+                        let center_pencil_marks: Vec<usize> = entry
+                            .center_pencil_marks
+                            .iter()
+                            .map(|x| *x as usize)
+                            .collect();
+                        pencilmarks = pencilmarks & ValueMask::from_values(&center_pencil_marks);
                     }
                     if pencilmarks != all_values_mask {
                         solver = solver.with_constraint(Arc::new(PencilmarkConstraint::new(
@@ -114,19 +112,19 @@ impl FPuzzlesParser {
             // TODO: Add disjoint groups constraint
         }
 
-        if board.arrow.len() > 0 {
+        if !board.arrow.is_empty() {
             // TODO: Arrow
         }
 
-        if board.killercage.len() > 0 {
+        if !board.killercage.is_empty() {
             // TODO: Killer cages
         }
 
-        if board.littlekillersum.len() > 0 {
+        if !board.littlekillersum.is_empty() {
             // TODO: Little Killer
         }
 
-        if board.odd.len() > 0 {
+        if !board.odd.is_empty() {
             for fpuzzles_cell in board.odd.iter() {
                 let cell = self.parse_cell(&fpuzzles_cell.cell, size);
                 if let Some(cell) = cell {
@@ -135,7 +133,7 @@ impl FPuzzlesParser {
             }
         }
 
-        if board.even.len() > 0 {
+        if !board.even.is_empty() {
             for fpuzzles_cell in board.even.iter() {
                 let cell = self.parse_cell(&fpuzzles_cell.cell, size);
                 if let Some(cell) = cell {
@@ -144,51 +142,51 @@ impl FPuzzlesParser {
             }
         }
 
-        if board.minimum.len() > 0 {
+        if !board.minimum.is_empty() {
             // TODO: Minimum constraint
         }
 
-        if board.maximum.len() > 0 {
+        if !board.maximum.is_empty() {
             // TODO: Maximum constraint
         }
 
-        if board.rowindexer.len() > 0 {
+        if !board.rowindexer.is_empty() {
             // TODO: Row indexer
         }
 
-        if board.columnindexer.len() > 0 {
+        if !board.columnindexer.is_empty() {
             // TODO: Column indexer
         }
 
-        if board.boxindexer.len() > 0 {
+        if !board.boxindexer.is_empty() {
             // TODO Box indexer
         }
 
-        if board.extraregion.len() > 0 {
+        if !board.extraregion.is_empty() {
             // TODO Extra region
         }
 
-        if board.thermometer.len() > 0 {
+        if !board.thermometer.is_empty() {
             // TODO Thermometer
         }
 
-        if board.palindrome.len() > 0 {
+        if !board.palindrome.is_empty() {
             // TODO Palindrome
         }
 
-        if board.renban.len() > 0 {
+        if !board.renban.is_empty() {
             // TODO Renban
         }
 
-        if board.whispers.len() > 0 {
+        if !board.whispers.is_empty() {
             // TODO Whispers
         }
 
-        if board.regionsumline.len() > 0 {
+        if !board.regionsumline.is_empty() {
             // TODO Region sum line
         }
 
-        if board.betweenline.len() > 0 {
+        if !board.betweenline.is_empty() {
             // TODO Between line
         }
 
@@ -196,8 +194,8 @@ impl FPuzzlesParser {
         let negative_ratio = board.negative.iter().any(|x| x == "ratio");
         if negative_consecutive
             || negative_ratio
-            || board.difference.len() > 0
-            || board.ratio.len() > 0
+            || !board.difference.is_empty()
+            || !board.ratio.is_empty()
         {
             let mut markers: Vec<StandardOrthogonalPairsMarker> = Vec::new();
             for cells in board.difference.iter() {
@@ -236,7 +234,7 @@ impl FPuzzlesParser {
                 negatives.push(StandardPairType::Diff(1));
             }
             if negative_ratio {
-                if markers.len() == 0 {
+                if markers.is_empty() {
                     negatives.push(StandardPairType::Ratio(2));
                 } else {
                     negatives.extend(markers.iter().map(|x| x.marker_type()).unique());
@@ -250,7 +248,7 @@ impl FPuzzlesParser {
         }
 
         let negative_xv = board.negative.iter().any(|x| x == "xv");
-        if negative_xv || board.xv.len() > 0 {
+        if negative_xv || !board.xv.is_empty() {
             let mut markers: Vec<StandardOrthogonalPairsMarker> = Vec::new();
             for cells in board.difference.iter() {
                 if cells.cells.len() != 2 {
@@ -284,27 +282,27 @@ impl FPuzzlesParser {
             ));
         }
 
-        if board.clone.len() > 0 {
+        if !board.clone.is_empty() {
             // TODO: Clone constraint
         }
 
-        if board.quadruple.len() > 0 {
+        if !board.quadruple.is_empty() {
             // TODO: Quadruple constraint
         }
 
-        if board.sandwichsum.len() > 0 {
+        if !board.sandwichsum.is_empty() {
             // TODO: Sandwich sum constraint
         }
 
-        if board.xsum.len() > 0 {
+        if !board.xsum.is_empty() {
             // TODO: X-Sum constraint
         }
 
-        if board.skyscraper.len() > 0 {
+        if !board.skyscraper.is_empty() {
             // TODO: Skyscraper constraint
         }
 
-        if board.entropicline.len() > 0 {
+        if !board.entropicline.is_empty() {
             // TODO: Entrpic line constraint
         }
 
@@ -313,9 +311,7 @@ impl FPuzzlesParser {
 
     fn parse_cell(&self, cell_str: &str, size: usize) -> Option<CellIndex> {
         let captures = self.parse_cell_regex.captures(cell_str);
-        if captures.is_none() {
-            return None;
-        }
+        captures.as_ref()?;
 
         let captures = captures.unwrap();
         if captures.len() != 3 {
@@ -342,5 +338,11 @@ impl FPuzzlesParser {
             return None;
         }
         Some(CellIndex::from_rc(row - 1, col - 1, size))
+    }
+}
+
+impl Default for FPuzzlesParser {
+    fn default() -> Self {
+        Self::new()
     }
 }

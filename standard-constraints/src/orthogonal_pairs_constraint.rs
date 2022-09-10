@@ -287,7 +287,7 @@ mod test {
             &[StandardPairType::Diff(1), StandardPairType::Ratio(2)],
         ));
         let solver = SolverBuilder::default()
-            .with_constraint(kropki_constraint.clone())
+            .with_constraint(kropki_constraint)
             .build()
             .unwrap();
 
@@ -310,7 +310,7 @@ mod test {
             &[StandardPairType::Diff(1), StandardPairType::Ratio(2)],
         ));
         let solver = SolverBuilder::default()
-            .with_constraint(kropki_constraint.clone())
+            .with_constraint(kropki_constraint)
             .build()
             .unwrap();
 
@@ -342,7 +342,7 @@ mod test {
         assert!(!solver.board().cell(cell1).has(5));
 
         let solver = SolverBuilder::default()
-            .with_constraint(xv_constraint.clone())
+            .with_constraint(xv_constraint)
             .with_given(cell0, 2)
             .build()
             .unwrap();
@@ -357,7 +357,7 @@ mod test {
             &[],
         ));
         let solver = SolverBuilder::default()
-            .with_constraint(xv_constraint.clone())
+            .with_constraint(xv_constraint)
             .build()
             .unwrap();
         assert_eq!(solver.board().cell(cell0).count(), 4);
