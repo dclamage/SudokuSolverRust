@@ -19,6 +19,8 @@ pub struct FPuzzlesBoard {
     #[serde(default = "default_false")]
     pub antiknight: bool,
     #[serde(default = "default_false")]
+    pub antiking: bool,
+    #[serde(default = "default_false")]
     pub disjointgroups: bool,
     #[serde(default = "default_false")]
     pub nonconsecutive: bool,
