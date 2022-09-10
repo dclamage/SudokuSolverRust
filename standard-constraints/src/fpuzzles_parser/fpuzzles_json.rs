@@ -16,11 +16,11 @@ pub struct FPuzzlesBoard {
     pub diagonal_p: bool,
     #[serde(rename = "diagonal-", default = "default_false")]
     pub diagonal_n: bool,
-    #[serde(rename = "diagonal", default = "default_false")]
+    #[serde(default = "default_false")]
     pub antiknight: bool,
-    #[serde(rename = "diagonal", default = "default_false")]
+    #[serde(default = "default_false")]
     pub disjointgroups: bool,
-    #[serde(rename = "diagonal", default = "default_false")]
+    #[serde(default = "default_false")]
     pub nonconsecutive: bool,
     #[serde(default)]
     pub negative: Vec<String>,
@@ -129,7 +129,10 @@ pub struct FPuzzlesGridEntry {
         deserialize_with = "deserialize_null_default"
     )]
     pub given_pencil_marks: Vec<i32>,
-    #[serde(default = "default_neg1", deserialize_with = "deserialize_as_neg1")]
+    #[serde(
+        default = "default_neg1",
+        deserialize_with = "deserialize_null_as_neg1"
+    )]
     pub region: i32,
 }
 
@@ -228,7 +231,7 @@ where
     Ok(opt.unwrap_or_default())
 }
 
-fn deserialize_as_neg1<'de, D>(deserializer: D) -> Result<i32, D::Error>
+fn deserialize_null_as_neg1<'de, D>(deserializer: D) -> Result<i32, D::Error>
 where
     D: Deserializer<'de>,
 {
