@@ -438,6 +438,35 @@ impl ValueMask {
         }
     }
 
+    /// Returns a mask with all unset values.
+    ///
+    /// # Example
+    /// ```
+    /// # use sudoku_solver_lib::value_mask::ValueMask;
+    /// let mask = ValueMask::from_value(5).solved();
+    /// assert!(mask.is_solved());
+    /// assert!(mask.has(5));
+    ///
+    /// let mask = mask.inverted(9);
+    /// assert!(!mask.is_solved());
+    /// assert!(mask.has(1));
+    /// assert!(mask.has(2));
+    /// assert!(mask.has(3));
+    /// assert!(mask.has(4));
+    /// assert!(!mask.has(5));
+    /// assert!(mask.has(6));
+    /// assert!(mask.has(7));
+    /// assert!(mask.has(8));
+    /// assert!(mask.has(9));
+    /// ```
+    #[must_use]
+    pub fn inverted(self, size: usize) -> Self {
+        let all_values = Self::from_all_values(size).raw();
+        ValueMask {
+            mask: !self.mask & all_values,
+        }
+    }
+
     /// Returns true if no values are possible.
     ///
     /// # Example

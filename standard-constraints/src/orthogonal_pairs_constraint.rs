@@ -73,13 +73,13 @@ impl OrthogonalPairsConstraint {
     pub fn from_standard_markers(
         size: usize,
         specific_name: &str,
-        standard_markers: Vec<StandardOrthogonalPairsMarker>,
+        standard_markers: &[StandardOrthogonalPairsMarker],
         negative_constraints: &[StandardPairType],
     ) -> Self {
         let mut markers = Vec::new();
         let mut candidate_pairs = HashMap::new();
 
-        for marker in standard_markers {
+        for &marker in standard_markers {
             let type_name = marker.marker_type.name();
             if !candidate_pairs.contains_key(&type_name) {
                 candidate_pairs.insert(type_name.clone(), marker.marker_type.candidate_pairs(size));
@@ -248,6 +248,18 @@ impl StandardOrthogonalPairsMarker {
     pub fn ratio(ratio: usize, cell0: CellIndex, cell1: CellIndex) -> Self {
         Self::new(StandardPairType::Ratio(ratio), cell0, cell1)
     }
+
+    pub fn marker_type(&self) -> StandardPairType {
+        self.marker_type
+    }
+
+    pub fn cell0(&self) -> CellIndex {
+        self.cell0
+    }
+
+    pub fn cell1(&self) -> CellIndex {
+        self.cell1
+    }
 }
 
 impl From<StandardOrthogonalPairsMarker> for OrthogonalPairsMarker {
@@ -271,7 +283,7 @@ mod test {
         let kropki_constraint = Arc::new(OrthogonalPairsConstraint::from_standard_markers(
             9,
             "Kropki",
-            Vec::new(),
+            &[],
             &[StandardPairType::Diff(1), StandardPairType::Ratio(2)],
         ));
         let solver = SolverBuilder::default()
@@ -294,7 +306,7 @@ mod test {
         let kropki_constraint = Arc::new(OrthogonalPairsConstraint::from_standard_markers(
             size,
             "Kropki",
-            vec![marker],
+            &[marker],
             &[StandardPairType::Diff(1), StandardPairType::Ratio(2)],
         ));
         let solver = SolverBuilder::default()
@@ -317,7 +329,7 @@ mod test {
         let xv_constraint = Arc::new(OrthogonalPairsConstraint::from_standard_markers(
             size,
             "XV",
-            vec![marker],
+            &[marker],
             &[],
         ));
         let solver = SolverBuilder::default()
@@ -341,7 +353,7 @@ mod test {
         let xv_constraint = Arc::new(OrthogonalPairsConstraint::from_standard_markers(
             size,
             "XV",
-            vec![marker],
+            &[marker],
             &[],
         ));
         let solver = SolverBuilder::default()
