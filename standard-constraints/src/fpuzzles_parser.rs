@@ -1,4 +1,4 @@
-//! Contains the [`FpuzzlesParser`] struct for parsing the f-puzzles format.
+//! Contains the [`FPuzzlesParser`] struct for parsing the f-puzzles format.
 
 pub mod fpuzzles_json;
 mod fpuzzles_test_data;
@@ -93,14 +93,14 @@ impl FPuzzlesParser {
                 }
             }
         }
-        solver = solver.with_regions(regions);
+        solver = solver.with_regions(regions.clone());
 
         // Add global constraints
         if board.diagonal_p {
-            // TODO: Add diagonal constraint
+            solver = solver.with_constraint(Arc::new(NonRepeatConstraint::from_diagonalp(size)));
         }
         if board.diagonal_n {
-            // TODO: Add diagonal constraint
+            solver = solver.with_constraint(Arc::new(NonRepeatConstraint::from_diagonaln(size)));
         }
         if board.antiknight {
             solver = solver.with_constraint(Arc::new(ChessConstraint::anti_knight()));
@@ -109,7 +109,20 @@ impl FPuzzlesParser {
             solver = solver.with_constraint(Arc::new(ChessConstraint::anti_king()));
         }
         if board.disjointgroups {
-            // TODO: Add disjoint groups constraint
+            for region_id in regions.iter().copied().unique() {
+                let cells: Vec<CellIndex> = regions
+                    .iter()
+                    .copied()
+                    .enumerate()
+                    .filter(move |(_, id)| *id == region_id)
+                    .map(move |(index, _)| cu.cell_index(index))
+                    .collect();
+                if cells.len() == size {
+                    let name = format!("DisjointGroup{}", region_id + 1);
+                    solver =
+                        solver.with_constraint(Arc::new(NonRepeatConstraint::new(&name, cells)));
+                }
+            }
         }
 
         if !board.arrow.is_empty() {
@@ -163,7 +176,14 @@ impl FPuzzlesParser {
         }
 
         if !board.extraregion.is_empty() {
-            // TODO Extra region
+            for (id, extra_region) in board.extraregion.iter().enumerate() {
+                let cells = self.parse_cells(extra_region, size);
+                if cells.len() == size {
+                    let name = format!("ExtraRegion{}", id + 1);
+                    solver =
+                        solver.with_constraint(Arc::new(NonRepeatConstraint::new(&name, cells)));
+                }
+            }
         }
 
         if !board.thermometer.is_empty() {
@@ -338,6 +358,14 @@ impl FPuzzlesParser {
             return None;
         }
         Some(CellIndex::from_rc(row - 1, col - 1, size))
+    }
+
+    fn parse_cells(&self, cells: &FPuzzlesCells, size: usize) -> Vec<CellIndex> {
+        cells
+            .cells
+            .iter()
+            .filter_map(|fpuzzles_cell| self.parse_cell(fpuzzles_cell, size))
+            .collect()
     }
 }
 

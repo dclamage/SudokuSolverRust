@@ -1,5 +1,6 @@
 pub mod chess_constraint;
 pub mod fpuzzles_parser;
+pub mod non_repeat_constraint;
 pub mod orthogonal_pairs_constraint;
 pub mod pencilmark_constraint;
 pub mod prelude;
