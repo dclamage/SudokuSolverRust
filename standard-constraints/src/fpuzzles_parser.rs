@@ -323,7 +323,7 @@ impl FPuzzlesParser {
         }
 
         if !board.entropicline.is_empty() {
-            // TODO: Entrpic line constraint
+            // TODO: Entropic line constraint
         }
 
         solver.build()
@@ -372,5 +372,115 @@ impl FPuzzlesParser {
 impl Default for FPuzzlesParser {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::{fpuzzles_test_data::test::FPUZZLES_CLASSICS_DATA, *};
+
+    fn test_unqiue_solution_from_lzstring(
+        parser: &FPuzzlesParser,
+        lzstring: &str,
+        expected_solution: &str,
+    ) {
+        struct Receiver {
+            solution: Option<String>,
+        }
+
+        impl SolutionReceiver for Receiver {
+            fn receive(&mut self, result: Box<Board>) -> bool {
+                self.solution = Some(result.to_string());
+                true
+            }
+        }
+        let mut receiver = Receiver { solution: None };
+
+        let board = FPuzzlesBoard::from_lzstring_json(lzstring).unwrap();
+        let solver = parser.parse_board(&board, false).unwrap();
+        let count = solver.find_solution_count(10000, Some(&mut receiver));
+        assert!(count.is_exact_count());
+        assert_eq!(count.count().unwrap(), 1);
+        assert_eq!(receiver.solution.unwrap(), expected_solution);
+
+        let solution = solver.find_first_solution();
+        assert!(solution.is_solved());
+        let solution_board = solution.board().unwrap();
+        assert!(solution_board.is_solved());
+        assert_eq!(solution_board.to_string(), expected_solution);
+
+        let solution = solver.find_random_solution();
+        assert!(solution.is_solved());
+        let solution_board = solution.board().unwrap();
+        assert!(solution_board.is_solved());
+        assert_eq!(solution_board.to_string(), expected_solution);
+
+        let true_candidates = solver.find_true_candidates();
+        assert!(true_candidates.is_solved());
+        let solution_board = solution.board().unwrap();
+        assert!(solution_board.is_solved());
+        assert_eq!(solution_board.to_string(), expected_solution);
+    }
+
+    #[test]
+    fn test_classics() {
+        let parser = FPuzzlesParser::new();
+        for classic in FPUZZLES_CLASSICS_DATA {
+            test_unqiue_solution_from_lzstring(&parser, &classic.0, &classic.1);
+        }
+    }
+
+    #[test]
+    fn test_miracle() {
+        let parser = FPuzzlesParser::new();
+        let lzstring = r#"N4IgzglgXgpiBcBOANCA5gJwgEwQbT2AF9ljSSzKLryBdZQmq8l54+x1p7rjtn/nQZsQANwCGAGwCuceAEZUaCKJgA7BABcMsgXr56upMVNkIATEpXqtOmNwNHB/R88Pth7r7XohxazQgAazUINAALTVtZVH9AoIg1NGiYVDUAezUAY0ywGCzpQNUUoiA==="#;
+        let expected_solution =
+            r#"483726159726159483159483726837261594261594837594837261372615948615948372948372615"#;
+        test_unqiue_solution_from_lzstring(&parser, lzstring, expected_solution)
+    }
+
+    #[test]
+    fn test_kropki() {
+        let parser = FPuzzlesParser::new();
+        let lzstring = r#"N4IgzglgXgpiBcBOANCA5gJwgEwQbT2AF9ljSSzKLryBdZQmq8l54+x1p7rjtn/nQaCR3PgIm9hk0UM6zR4rssX0QAOwD26gMbawMHQFcALhABuceCYxGYqbBABmTmBhi6rhEDpgAbPzB8EAAlRABhRBBUEIAOSJBaCh9/QOCQgHZwgFZo0PjcpNIUgKD4PFCIgBY8uPCaotBfUvT4gEZa+IAmROTmtPLQgDZwgGZarPHGkoGKkJHxmOyx3uL+srmRmpiF1abUjeH62pHCvoP0rNydnL2Zw5CqhKWE6fX00efQrtfzlsGQj9YrU2uFgW8LgCfkNaj8zmtIXNPttvscIf8kbcYnC7u8AZ8YTFPvD9hjQp9FqEnlM/rMqSsYk8GrSHk9CfSMrjEaFlsCXpz0XSQst2Y9wjDBQ8sqKRhKWa1wpyYvE5QiyWEwbUIgL5QCsnz8prJZdFSdTcaASMDfNzUQ1OoYGgAIZmSzBDAuiCaRKoD1mb3lUlCoG1T7g3WY61PcNqoXdLXhHoWubxmJZJMRnlYrPM2MPZbXLOqoNSzU3GMlj6J2pPDN5hWFuq5yt601po2ZjWUjXN+4KlGZNGd2W1EVc9WfJXkjv1/HVonhDrJ0KgjoxUF1ltzUHdn40pJAA="#;
+        let expected_solution =
+            r#"482617953951832647637945128268793415593124786174568239815279364329486571746351892"#;
+        test_unqiue_solution_from_lzstring(&parser, lzstring, expected_solution)
+    }
+
+    #[test]
+    fn test_kropki_pairs() {
+        let parser = FPuzzlesParser::new();
+        let lzstring = r#"N4IgzglgXgpiBcBOANCA5gJwgEwQbT1ADcBDAGwFc54AWAX2WPKoQA4GnLqAmDkUrggBsfAS3gBGUc2oB2aYKQLxAVmXUAzHQC6yQvxkI1jA4sTqEUk2Ortrh+FvuLez8SLfV6nhPN36bYQtHYPkfJXDvTlVgq2ieYPZ/eIRXFPgPdLt0sPTzcKd0qNNxOJLqNWTyhHz043TC6slgtKbiwPhcpuymkSqOso6ujvaHet7EluDGjvN+hx6B4PGO1qHg2qaZh0y2nT0GqfDNkcnw3Y6Vh2GHKXnFG8VRxQuHbcUrxUGFjantXRA2AgADNgTAMDAAHYAY2o+lhZDIYHwIAASogAMKIECoVGsLEgbR8BFIlGo2QYlQ4tH4qlEkwk5HwPBozE0al4jHs+mgRlk/ESDn47iE4kwRFMlmooQYjQcilynkgPnMtEyuW4lSy0UM8Wk1XSrkc9U63l6yVqo24mV0sUSskUqnWymm5Xmsk0AmaglKlVSjRetHcH12/VS4OsDkSDGR33ug3BoQc4O23X2g0B9m44Pc0MW1EBp1Bl1x9P+jFJ3GF11+tEBjVoz2KvMe7W4z25tNhxsVjme2Q1+NSrWR70D0vd1Fays9pMT/MUmeGuctg34ge4/Errv5zGj1kY8erqUU/ec2PHtEUjeWo87skys8yu9mstorUi9sYkVEgEYEgAC4QAA9vgr6ThGHIBhe94ZjGfbwfO/LfhymI/penKfleKFIQaWpFlORq4cOLretu4ELvBzowRRZIBlhqKeuhsFSrSQpERh17yohGGYg26IcSxNJWthna0QaMpLtOg5vgWh5QTxQlyQxAaCsRaLRoKuLRsx4lStG/HBs2RJAA=="#;
+        let expected_solution =
+            r#"482617953591832647637945128268793415953124786174568239815279364329486571746351892"#;
+        test_unqiue_solution_from_lzstring(&parser, lzstring, expected_solution)
+    }
+
+    #[test]
+    fn test_irregular() {
+        let parser = FPuzzlesParser::new();
+        let lzstring = r#"N4IgzglgXgpiBcBOANCA5gJwgEwQbT1ADcBDAGwFc54BGVNCImAOwQBcMqBfZUDGBgHtWtHnwERhCGmNm8xIfkJEzeiiVNFqlklVwC6yQiFKVqAJnqMW7TjAU7Nq8coTmHGke+2e3H1/DewHLBhsamVAgAzFZMIhzcPgFB6sn+utHpmlFZIjlJGfD5LoXFqaUGRiWaAAyoEdQALLE28An28p3VeSG5CI198AMFmgNh3Qh1JuSR8ACsLfF2g8MTQ70jInMboVXltfUz1ABsi7aJa9ubCFeXg7f7W4PHz6/jj5OHZggA7Gdtyy6r2u8BeILBawhH3gP0GsPejhEUwaCAAHP92nCsUCutDYSD8btjIjJoNUWSKSDyVSdgZ9FwgA"#;
+        let expected_solution =
+            r#"198765432219876543321987654432198765543219876654321987765432198876543219987654321"#;
+        test_unqiue_solution_from_lzstring(&parser, lzstring, expected_solution)
+    }
+
+    #[test]
+    fn test_windowku() {
+        let parser = FPuzzlesParser::new();
+        let lzstring = r#"N4IgzglgXgpiBcBOANCA5gJwgEwQbT2AF9ljSQA3AQwBsBXOeAdlTQgpgDsEAXDBkmSGDBlWgwQAOVuy69+MEQF1khEaXVCx9RgEYZHbvD4CNZ4irXnN2ifACsBucYWbR1HQgDMToycUalsLWIcGgHnYAbL7yAkHu4owALDEupmE2EYwATKn+bvHkWQiO6LJ+rua2enmVYdXetenKquGJCCxlhrEBGaEN8CldzvlF7fDRwxXNhX1zLVZaxfA+Uz1uoQme8LlraYpKKiAwAB58VBgwbAD2RoQgAMYwNDRg+CAAStkAwtkgqF9vl5/p8fkkQR8vL8IVDgQCoeCAUloUigRDkeClKIni83vA8J9IijCWiAUTEZ8mMSPlS4ZTvhSPpJqcy6UyGSAseQca93h8iZEIUSmELvpIIVTBQCqSLpWKIcypZ9mbLlfKuaAeXiCYClYDVYDxfDvnqoQaoUbPsi9ciDcjxVisUA="#;
+        let expected_solution =
+            r#"497263185835491627126857934271938546348576291659142378782315469564729813913684752"#;
+        test_unqiue_solution_from_lzstring(&parser, lzstring, expected_solution)
+    }
+
+    #[test]
+    fn test_sudokux() {
+        let parser = FPuzzlesParser::new();
+        let lzstring = r#"N4IgzglgXgpiBcBOANCA5gJwgEwQbT1ADcBDAGwFc54A2VNCImAOwQBcMqBfZYHv3vxClK1ACz1GLdpxj95g3sPJUEADklNW8DtwC6yQguIrqAVk3SdsoSNXwA7Je265igSdEIJ6KS5vuXAZGgaEetqYITr5aMtyCwR7KXkjOcW7hSnbUGjFWrhEpAExp1vGZfInG1VmRtKUFtSkAjA0B4VVhyfatef7lhfbRDLFlGYPibQOdnvYWfek1s9TDfoth8jMTCCgLY0vd1L0j+e2H6lPjCYbLCADMl0vb8PMn/VcVQQYg2BAkaAB7ZjkADU6VQv3+QPIAFpFkA=="#;
+        let expected_solution =
+            r#"637945218925718463418623579591482637743596182862137945154879326279361854386254791"#;
+        test_unqiue_solution_from_lzstring(&parser, lzstring, expected_solution)
     }
 }
