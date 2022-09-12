@@ -4,7 +4,7 @@ use itertools::Itertools;
 
 use crate::prelude::*;
 
-use std::{any::TypeId, sync::Arc};
+use std::{any::TypeId, collections::HashMap, sync::Arc};
 
 /// Builds a [`Solver`].
 #[derive(Clone, Debug)]
@@ -15,6 +15,7 @@ pub struct SolverBuilder {
     constraints: Vec<Arc<dyn Constraint>>,
     givens: Vec<(CellIndex, usize)>,
     errors: Vec<String>,
+    custom_info: HashMap<String, String>,
 }
 
 impl SolverBuilder {
@@ -27,6 +28,7 @@ impl SolverBuilder {
             constraints: Vec::new(),
             givens: Vec::new(),
             errors: Vec::new(),
+            custom_info: HashMap::new(),
         }
     }
 
@@ -185,6 +187,11 @@ impl SolverBuilder {
         self
     }
 
+    pub fn with_custom_info(mut self, key: &str, value: &str) -> Self {
+        self.custom_info.insert(key.to_owned(), value.to_owned());
+        self
+    }
+
     fn standard_logic() -> Vec<Arc<dyn LogicalStep>> {
         vec![
             Arc::new(AllNakedSingles),
@@ -300,6 +307,7 @@ impl SolverBuilder {
             board,
             logical_solve_steps,
             brute_force_steps,
+            custom_info: self.custom_info,
         };
 
         Ok(solver)

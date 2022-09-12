@@ -48,7 +48,7 @@ impl std::fmt::Display for LogicalSolveResult {
         if let Some(desc) = desc {
             write!(f, "{}", desc)
         } else {
-            write!(f, "No Description")
+            write!(f, "No logical steps found.")
         }
     }
 }

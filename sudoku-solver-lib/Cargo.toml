@@ -1,11 +1,16 @@
 [package]
 name = "sudoku-solver-lib"
 version = "0.1.0"
+authors = ["Rangsk"]
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[lib]
+crate-type = ["cdylib", "rlib"]
+
 [dependencies]
 itertools = "0.10.3"
 bitvec = "~1.0"
+getrandom = { version = "0.2.7", features = ["js"] }
 rand = "0.8.5"

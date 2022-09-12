@@ -11,7 +11,10 @@ pub mod true_candidates_count_result;
 use itertools::Itertools;
 
 use crate::prelude::*;
-use std::{collections::HashSet, sync::Arc};
+use std::{
+    collections::{HashMap, HashSet},
+    sync::Arc,
+};
 
 /// The main entry point for solving a puzzle.
 ///
@@ -33,6 +36,7 @@ pub struct Solver {
     board: Board,
     logical_solve_steps: Vec<Arc<dyn LogicalStep>>,
     brute_force_steps: Vec<Arc<dyn LogicalStep>>,
+    custom_info: HashMap<String, String>,
 }
 
 impl Solver {
@@ -46,6 +50,14 @@ impl Solver {
 
     pub fn cell_utility(&self) -> CellUtility {
         self.board.cell_utility()
+    }
+
+    pub fn set_custom_info(&mut self, key: String, value: String) {
+        self.custom_info.insert(key, value);
+    }
+
+    pub fn get_custom_info(&self, key: &str) -> Option<&str> {
+        self.custom_info.get(key).map(|s| s.as_str())
     }
 
     /// Find a single logical step that can be applied to the puzzle.

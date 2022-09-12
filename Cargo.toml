@@ -2,5 +2,8 @@
 members = [
   "sudoku-solver-console",
   "standard-constraints",
-  "sudoku-solver-lib"
+  "sudoku-solver-lib",
 ]
+
+[profile.release]
+lto = true

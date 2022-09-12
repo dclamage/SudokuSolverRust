@@ -95,6 +95,35 @@ impl FPuzzlesParser {
         }
         solver = solver.with_regions(regions.clone());
 
+        // Add solving options
+        for option in board.truecandidatesoptions.iter() {
+            if option == "colored" {
+                solver = solver.with_custom_info("truecandidatescolored", "true");
+            } else if option == "logical" {
+                solver = solver.with_custom_info("truecandidateslogical", "true");
+            }
+        }
+
+        // Store the original center marks if they are treated as given
+        if treat_pencilmarks_as_given {
+            let mut center_marks = Vec::new();
+            for i in 0..size {
+                for j in 0..size {
+                    let entry = &board.grid[i][j];
+                    let center_pencil_marks: String = entry
+                        .center_pencil_marks
+                        .iter()
+                        .map(|x| *x as usize)
+                        .join(",");
+                    center_marks.push(center_pencil_marks);
+                }
+            }
+            solver = solver.with_custom_info(
+                "OriginalCenterMarks",
+                center_marks.iter().join(";").as_str(),
+            );
+        }
+
         // Add global constraints
         if board.diagonal_p {
             solver = solver.with_constraint(Arc::new(NonRepeatConstraint::from_diagonalp(size)));
