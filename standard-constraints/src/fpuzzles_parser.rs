@@ -45,7 +45,10 @@ impl FPuzzlesParser {
             for j in 0..size {
                 let entry = &board.grid[i][j];
                 let cell = cu.cell(i, j);
-                if treat_pencilmarks_as_given || entry.given {
+                if (treat_pencilmarks_as_given || entry.given)
+                    && entry.value > 0
+                    && entry.value <= size as i32
+                {
                     givens.push((cell, entry.value as usize));
                 }
 
