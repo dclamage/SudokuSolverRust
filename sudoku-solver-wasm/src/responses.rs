@@ -43,6 +43,26 @@ impl InvalidResponse {
 }
 
 #[derive(Debug, Clone, Serialize)]
+pub(crate) struct DebugLogResponse {
+    #[serde(rename = "type")]
+    pub response_type: String,
+    pub message: String,
+}
+
+impl DebugLogResponse {
+    pub fn new(message: &str) -> Self {
+        Self {
+            response_type: "debuglog".to_owned(),
+            message: message.to_owned(),
+        }
+    }
+
+    pub fn to_json(&self) -> String {
+        serde_json::to_string(self).unwrap()
+    }
+}
+
+#[derive(Debug, Clone, Serialize)]
 pub(crate) struct TrueCandidatesResponse {
     pub nonce: i32,
     #[serde(rename = "type")]
@@ -131,11 +151,15 @@ pub(crate) struct LogicalResponse {
 
 impl LogicalResponse {
     pub fn new(nonce: i32, cells: &[LogicalCell], message: &str, is_valid: bool) -> Self {
+        let mut message = message.to_owned();
+        if message.len() > 0 && message.chars().last().unwrap() != '\n' {
+            message.push('\n');
+        }
         Self {
             nonce,
             response_type: "logical".to_owned(),
             cells: cells.to_owned(),
-            message: message.to_owned(),
+            message,
             is_valid,
         }
     }

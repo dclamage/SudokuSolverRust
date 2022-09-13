@@ -12,15 +12,81 @@
 // ==/UserScript==
 
 (function() {
-    const doShim = function(wasm) {
+    const doShim = function() {
         'use strict';
+
+        // Create the solver worker
+        function getWorkerURL(url) {
+            const content = `importScripts( "${ url }" );`;
+            return URL.createObjectURL(new Blob([content], { type: "text/javascript" }));
+        }
+
+        let processingMessage = false;
+
+        function receiveResponse(response) {
+            if (response.type === "debuglog") {
+                console.log(response.message);
+                return;
+            }
+
+            if (response.nonce === nonce) {
+                if (!allowCommandWhenUndo[lastCommand] && changeIndex < changes.length - 1) {
+                    // Undo has been pressed
+                    return;
+                }
+
+                if (response.type === 'canceled') {
+                    log('Operation canceled.');
+                    if (cancelButton) {
+                        cancelButton.title = cancelButton.origTitle;
+                        cancelButton = null;
+                    }
+                    connectButton.title = 'Idle';
+                    commandIsComplete = true;
+                    return;
+                }
+
+                processingMessage = true;
+                commandIsComplete = true;
+                if (lastCommand === 'truecandidates') {
+                    handleTrueCandidates(response);
+                } else if (lastCommand === 'solve') {
+                    handleSolve(response);
+                } else if (lastCommand === 'check') {
+                    handleCheck(response);
+                } else if (lastCommand === 'count') {
+                    handleCount(response);
+                } else if (lastCommand === 'solvepath') {
+                    handlePath(response);
+                } else if (lastCommand === 'step') {
+                    handleStep(response);
+                }
+
+                if (commandIsComplete) {
+                    connectButton.title = 'Idle';
+                    commandIsComplete = false;
+                }
+                processingMessage = false;
+            }
+        }
+
+        function createWorker() {
+            const workerURL = getWorkerURL('https://sudokusolverwasm.s3.us-west-2.amazonaws.com/fpuzzles-sudokusolver-wasm-worker.js');
+            let worker = new Worker(workerURL);
+            worker.onmessage = function(msg) {
+                const response = JSON.parse(msg.data);
+                receiveResponse(response);
+            };
+            return worker;
+        }
+        let solverWorker = createWorker();
 
         // Makes center and corner marks larger so they're easier to see.
         let textScale = 1.5;
         const settingsIcon = '\u2699\uFE0F';
 
         const connectButtonOffset = 208;
-        const connectButton = new button(canvas.width - connectButtonOffset, 40, 215, 40, ['Setting', 'Solving'], 'Connect', 'Connect');
+        const connectButton = new button(canvas.width - connectButtonOffset, 40, 215, 40, ['Setting', 'Solving'], 'Idle', 'Idle');
         const settingsButton = new button(canvas.width - 65, 40, 40, 40, ['Setting', 'Solving'], settingsIcon, settingsIcon);
 
         const canvasHeight = 900;
@@ -36,7 +102,6 @@
         let extraSettingsNames = [];
         extraSettingsNames.push('TrueCandidates');
 
-        let solverSocket = null;
         let commandIsComplete = false;
 
         const exportPuzzleForSolving = function(includeCandidates) {
@@ -64,22 +129,19 @@
 
         const sendPuzzleDelayed = function(message) {
             if (nonce === message.nonce) {
-                solverSocket.send(JSON.stringify(message));
+                solverWorker.postMessage(JSON.stringify(message));
             }
         }
 
         const sendPuzzle = function(command) {
-            if (!solverSocket) {
-                return;
-            }
             nonce++;
 
             if (command === "cancel") {
-                const message = {
-                    nonce: nonce,
-                    command: 'cancel',
-                }
-                solverSocket.send(JSON.stringify(message));
+                // Cancel by killing the worker and creating a new one
+                solverWorker.terminate();
+                receiveResponse({ type: 'canceled', nonce: nonce });
+
+                solverWorker = createWorker();
                 return;
             }
 
@@ -135,9 +197,6 @@
         const doCancelableCommand = function(force) {
             if (!force && !this.hovering()) {
                 return;
-            }
-            if (!solverSocket) {
-                return this.origClick();
             }
             boolSettings['TrueCandidates'] = false;
 
@@ -213,9 +272,6 @@
                         if (!this.hovering()) {
                             return;
                         }
-                        if (!solverSocket) {
-                            return this.origClick();
-                        }
 
                         boolSettings['TrueCandidates'] = false;
                         boolSettings['EditGivenMarks'] = false;
@@ -230,9 +286,6 @@
                     stepButton.click = function() {
                         if (!this.hovering()) {
                             return;
-                        }
-                        if (!solverSocket) {
-                            return this.origClick();
                         }
                         boolSettings['TrueCandidates'] = false;
                         boolSettings['EditGivenMarks'] = false;
@@ -305,9 +358,7 @@
             origCreateSidebarConsole();
             buttonsShown = false;
             hookSolverButtons();
-            if (solverSocket) {
-                showSolverButtons();
-            }
+            showSolverButtons();
         }
 
         let origCreateSidebarMain = createSidebarMain;
@@ -557,77 +608,11 @@
             }
         }
 
-        let processingMessage = false;
         connectButton.click = function() {
             if (!this.hovering()) {
                 return;
             }
 
-            if (!solverSocket) {
-                connectButton.title = 'Connecting...';
-
-                let socket = new WebSocket("ws://localhost:4545");
-                socket.onopen = function() {
-                    console.log("Connection succeeded");
-                    hookSolverButtons();
-                    showSolverButtons();
-                    connectButton.title = 'Disconnect';
-                };
-
-                socket.onmessage = function(msg) {
-                    const response = JSON.parse(msg.data);
-                    if (response.nonce === nonce) {
-                        if (!allowCommandWhenUndo[lastCommand] && changeIndex < changes.length - 1) {
-                            // Undo has been pressed
-                            return;
-                        }
-
-                        if (response.type === 'canceled') {
-                            log('Operation canceled.');
-                            if (cancelButton) {
-                                cancelButton.title = cancelButton.origTitle;
-                                cancelButton = null;
-                            }
-                            connectButton.title = 'Disconnect';
-                            commandIsComplete = true;
-                            return;
-                        }
-
-                        processingMessage = true;
-                        commandIsComplete = true;
-                        if (lastCommand === 'truecandidates') {
-                            handleTrueCandidates(response);
-                        } else if (lastCommand === 'solve') {
-                            handleSolve(response);
-                        } else if (lastCommand === 'check') {
-                            handleCheck(response);
-                        } else if (lastCommand === 'count') {
-                            handleCount(response);
-                        } else if (lastCommand === 'solvepath') {
-                            handlePath(response);
-                        } else if (lastCommand === 'step') {
-                            handleStep(response);
-                        }
-
-                        if (commandIsComplete) {
-                            connectButton.title = 'Disconnect';
-                            commandIsComplete = false;
-                        }
-                        processingMessage = false;
-                    }
-                };
-
-                socket.onclose = function() {
-                    connectButton.title = 'Connect';
-                    console.log("Connection closed");
-                    solverSocket = null;
-                    hideSolverButtons();
-                };
-                solverSocket = socket;
-            } else {
-                solverSocket.close();
-                solverSocket = null;
-            }
             return true;
         }
         buttons.push(connectButton);
@@ -1016,6 +1001,9 @@
                 buttons.push(prevButtons[i]);
             }
         }
+
+        hookSolverButtons();
+        showSolverButtons();
     }
 
     let intervalId = setInterval(async() => {
@@ -1027,11 +1015,6 @@
         }
 
         clearInterval(intervalId);
-        let wasm = await
-        import ('https://sudokusolverwasm.s3.us-west-2.amazonaws.com/sudoku_solver_wasm.js');
-        await wasm.default("https://sudokusolverwasm.s3.us-west-2.amazonaws.com/sudoku_solver_wasm_bg.wasm");
-        let result = wasm.solve('{"nonce":1,"command":"solve","dataType":"fpuzzles","data":"N4IgzglgXgpiBcBOANCA5gJwgEwQbT2AF9ljSSzKLryBdZQmq8l54+x1p7rjtn/nQaCR3PgIm9hk0UM6zR4rssX0Q2CGACGAIwA2MbHoD2aCAGN8agC4YArjHNaAdhuxbrMMMYAO1iMbOYPgg5sYmGIYgtERAA=="}')
-        console.log(result);
-        doShim(wasm);
+        doShim();
     }, 16);
 })();

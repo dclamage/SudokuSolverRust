@@ -33,8 +33,6 @@ pub fn solve(message: &str, receive_result: &js_sys::Function) {
     };
     let nonce = message.nonce();
 
-    cancel_current_solver();
-
     if message.command() == "cancel" {
         send_result(
             CanceledResponse::new(nonce).to_json().as_str(),
@@ -70,7 +68,7 @@ pub fn solve(message: &str, receive_result: &js_sys::Function) {
     };
 
     let parser = FPuzzlesParser::new();
-    let solver = match parser.parse_board(&board, only_givens) {
+    let solver = match parser.parse_board(&board, !only_givens) {
         Ok(puzzle) => puzzle,
         Err(error) => {
             send_result(
@@ -104,8 +102,10 @@ fn send_result(result: &str, receive_result: &js_sys::Function) {
     let _ = receive_result.call1(&this, &args);
 }
 
-fn cancel_current_solver() {
-    // TODO
+#[allow(dead_code)]
+fn debug_log(message: &str, receive_result: &js_sys::Function) {
+    let response = DebugLogResponse::new(message).to_json();
+    send_result(response.as_str(), receive_result);
 }
 
 fn get_bool_option(solver: &Solver, option: &str) -> bool {
@@ -253,7 +253,7 @@ fn count(
     max_solutions: i32,
     receive_result: &js_sys::Function,
 ) -> String {
-    let result = if max_solutions <= 2 {
+    let result = if max_solutions > 0 && max_solutions <= 2 {
         solver.find_solution_count(max_solutions as usize, None)
     } else {
         let mut receiver = ReportCountSolutionReceiver::new(nonce, receive_result);
@@ -317,7 +317,13 @@ fn step(nonce: i32, mut solver: Solver) -> String {
         let new_center_marks = solver
             .board()
             .all_cell_masks()
-            .map(|(_, mask)| mask.into_iter().join(","))
+            .map(|(_, mask)| {
+                if mask.is_solved() {
+                    String::new()
+                } else {
+                    mask.into_iter().join(",")
+                }
+            })
             .join(";");
         if original_center_marks != new_center_marks {
             return LogicalResponse::new(nonce, &cells, "Initial candidates.", false).to_json();
@@ -325,6 +331,7 @@ fn step(nonce: i32, mut solver: Solver) -> String {
     }
 
     let result = solver.run_single_logical_step();
+    let cells: Vec<LogicalCell> = logical_cells(&solver);
     match result {
         LogicalStepResult::None => {
             LogicalResponse::new(nonce, &cells, "No logical steps found.", true).to_json()
