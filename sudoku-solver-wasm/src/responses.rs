@@ -152,7 +152,7 @@ pub(crate) struct LogicalResponse {
 impl LogicalResponse {
     pub fn new(nonce: i32, cells: &[LogicalCell], message: &str, is_valid: bool) -> Self {
         let mut message = message.to_owned();
-        if message.len() > 0 && message.chars().last().unwrap() != '\n' {
+        if !message.ends_with('\n') {
             message.push('\n');
         }
         Self {
