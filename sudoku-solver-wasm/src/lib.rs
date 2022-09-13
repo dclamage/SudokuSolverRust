@@ -2,6 +2,8 @@ pub mod message;
 pub mod responses;
 mod utils;
 
+use std::time::Instant;
+
 use crate::message::*;
 use crate::responses::*;
 use itertools::Itertools;
@@ -16,11 +18,17 @@ use wasm_bindgen::prelude::*;
 static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
 #[wasm_bindgen]
-pub fn solve(message: &str) -> String {
+pub fn solve(message: &str, receive_result: &js_sys::Function) {
     let message = match Message::from_json(message) {
         Ok(message) => message,
         Err(error) => {
-            return InvalidResponse::new(0, &error.to_string()).to_json();
+            send_result(
+                InvalidResponse::new(0, &error.to_string())
+                    .to_json()
+                    .as_str(),
+                receive_result,
+            );
+            return;
         }
     };
     let nonce = message.nonce();
@@ -28,22 +36,36 @@ pub fn solve(message: &str) -> String {
     cancel_current_solver();
 
     if message.command() == "cancel" {
-        return CanceledResponse::new(nonce).to_json();
+        send_result(
+            CanceledResponse::new(nonce).to_json().as_str(),
+            receive_result,
+        );
+        return;
     }
 
     if message.data_type() != "fpuzzles" {
-        return InvalidResponse::new(nonce, "Invalid data type. Expected 'fpuzzles'.").to_json();
+        send_result(
+            InvalidResponse::new(nonce, "Invalid data type. Expected 'fpuzzles'.")
+                .to_json()
+                .as_str(),
+            receive_result,
+        );
+        return;
     }
 
-    let only_givens = match message.command() {
-        "solve" | "truecandidates" | "check" | "count" => true,
-        _ => false,
-    };
+    let only_givens = matches!(
+        message.command(),
+        "solve" | "truecandidates" | "check" | "count"
+    );
 
     let board = match FPuzzlesBoard::from_lzstring_json(message.data()) {
         Ok(board) => board,
         Err(error) => {
-            return InvalidResponse::new(nonce, &error.to_string()).to_json();
+            send_result(
+                InvalidResponse::new(nonce, &error).to_json().as_str(),
+                receive_result,
+            );
+            return;
         }
     };
 
@@ -51,15 +73,19 @@ pub fn solve(message: &str) -> String {
     let solver = match parser.parse_board(&board, only_givens) {
         Ok(puzzle) => puzzle,
         Err(error) => {
-            return InvalidResponse::new(nonce, &error.to_string()).to_json();
+            send_result(
+                InvalidResponse::new(nonce, &error).to_json().as_str(),
+                receive_result,
+            );
+            return;
         }
     };
 
-    match message.command() {
+    let result = match message.command() {
         "truecandidates" => true_candidates(nonce, solver),
         "solve" => find_solution(nonce, solver),
-        "check" => count(nonce, solver, 2),
-        "count" => count(nonce, solver, 0),
+        "check" => count(nonce, solver, 2, receive_result),
+        "count" => count(nonce, solver, 0, receive_result),
         "solvepath" => solve_path(nonce, solver),
         "step" => step(nonce, solver),
         _ => InvalidResponse::new(
@@ -67,7 +93,15 @@ pub fn solve(message: &str) -> String {
             format!("Unknown command: {}", message.command()).as_str(),
         )
         .to_json(),
-    }
+    };
+
+    send_result(result.as_str(), receive_result);
+}
+
+fn send_result(result: &str, receive_result: &js_sys::Function) {
+    let this = JsValue::NULL;
+    let args = js_sys::Array::of1(&JsValue::from_str(result));
+    let _ = receive_result.call1(&this, &args);
 }
 
 fn cancel_current_solver() {
@@ -178,8 +212,53 @@ fn find_solution(nonce: i32, solver: Solver) -> String {
     }
 }
 
-fn count(nonce: i32, solver: Solver, max_solutions: i32) -> String {
-    let result = solver.find_solution_count(max_solutions as usize, None);
+struct ReportCountSolutionReceiver<'a> {
+    count: usize,
+    nonce: i32,
+    receive_result: &'a js_sys::Function,
+    last_report_time: Instant,
+}
+
+impl<'a> ReportCountSolutionReceiver<'a> {
+    pub fn new(nonce: i32, receive_result: &'a js_sys::Function) -> Self {
+        Self {
+            count: 0,
+            nonce,
+            receive_result,
+            last_report_time: Instant::now(),
+        }
+    }
+}
+
+impl SolutionReceiver for ReportCountSolutionReceiver<'_> {
+    fn receive(&mut self, _result: Box<Board>) -> bool {
+        self.count += 1;
+
+        let now = Instant::now();
+        if now.duration_since(self.last_report_time).as_millis() >= 1000 {
+            self.last_report_time = now;
+
+            let in_progress_response =
+                CountResponse::new(self.nonce, self.count as u64, true).to_json();
+            send_result(in_progress_response.as_str(), self.receive_result);
+        }
+
+        true
+    }
+}
+
+fn count(
+    nonce: i32,
+    solver: Solver,
+    max_solutions: i32,
+    receive_result: &js_sys::Function,
+) -> String {
+    let result = if max_solutions <= 2 {
+        solver.find_solution_count(max_solutions as usize, None)
+    } else {
+        let mut receiver = ReportCountSolutionReceiver::new(nonce, receive_result);
+        solver.find_solution_count(0, Some(&mut receiver))
+    };
     match result {
         SolutionCountResult::None => InvalidResponse::new(nonce, "No solutions found.").to_json(),
         SolutionCountResult::Error(error) => InvalidResponse::new(nonce, &error).to_json(),
