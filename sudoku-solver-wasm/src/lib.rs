@@ -174,7 +174,7 @@ fn true_candidates(nonce: i32, solver: Solver) -> String {
         real_cells.clone()
     };
 
-    for cell_index in 0..size {
+    for cell_index in 0..real_cells.len() {
         let real_mask = real_cells[cell_index];
         let logical_mask = logical_cells[cell_index];
         for value in 1..=size {
