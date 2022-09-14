@@ -1,6 +1,6 @@
 use serde::*;
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct CanceledResponse {
     pub nonce: i32,
     #[serde(rename = "type")]
@@ -18,9 +18,14 @@ impl CanceledResponse {
     pub fn to_json(&self) -> String {
         serde_json::to_string(self).unwrap()
     }
+
+    #[allow(dead_code)]
+    pub fn from_json(json: &str) -> Result<Self, serde_json::Error> {
+        serde_json::from_str(json)
+    }
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct InvalidResponse {
     pub nonce: i32,
     #[serde(rename = "type")]
@@ -40,9 +45,14 @@ impl InvalidResponse {
     pub fn to_json(&self) -> String {
         serde_json::to_string(self).unwrap()
     }
+
+    #[allow(dead_code)]
+    pub fn from_json(json: &str) -> Result<Self, serde_json::Error> {
+        serde_json::from_str(json)
+    }
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct DebugLogResponse {
     #[serde(rename = "type")]
     pub response_type: String,
@@ -60,9 +70,14 @@ impl DebugLogResponse {
     pub fn to_json(&self) -> String {
         serde_json::to_string(self).unwrap()
     }
+
+    #[allow(dead_code)]
+    pub fn from_json(json: &str) -> Result<Self, serde_json::Error> {
+        serde_json::from_str(json)
+    }
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct TrueCandidatesResponse {
     pub nonce: i32,
     #[serde(rename = "type")]
@@ -83,9 +98,14 @@ impl TrueCandidatesResponse {
     pub fn to_json(&self) -> String {
         serde_json::to_string(self).unwrap()
     }
+
+    #[allow(dead_code)]
+    pub fn from_json(json: &str) -> Result<Self, serde_json::Error> {
+        serde_json::from_str(json)
+    }
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct SolvedResponse {
     pub nonce: i32,
     #[serde(rename = "type")]
@@ -105,9 +125,14 @@ impl SolvedResponse {
     pub fn to_json(&self) -> String {
         serde_json::to_string(self).unwrap()
     }
+
+    #[allow(dead_code)]
+    pub fn from_json(json: &str) -> Result<Self, serde_json::Error> {
+        serde_json::from_str(json)
+    }
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct CountResponse {
     pub nonce: i32,
     #[serde(rename = "type")]
@@ -130,15 +155,20 @@ impl CountResponse {
     pub fn to_json(&self) -> String {
         serde_json::to_string(self).unwrap()
     }
+
+    #[allow(dead_code)]
+    pub fn from_json(json: &str) -> Result<Self, serde_json::Error> {
+        serde_json::from_str(json)
+    }
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct LogicalCell {
     pub value: i32,
     pub candidates: Vec<i32>,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct LogicalResponse {
     pub nonce: i32,
     #[serde(rename = "type")]
@@ -166,5 +196,10 @@ impl LogicalResponse {
 
     pub fn to_json(&self) -> String {
         serde_json::to_string(self).unwrap()
+    }
+
+    #[allow(dead_code)]
+    pub fn from_json(json: &str) -> Result<Self, serde_json::Error> {
+        serde_json::from_str(json)
     }
 }

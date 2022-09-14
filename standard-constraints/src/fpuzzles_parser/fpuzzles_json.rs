@@ -243,7 +243,7 @@ where
 
 #[cfg(test)]
 mod test {
-    use super::super::fpuzzles_test_data::test::FPUZZLES_TEST_DATA;
+    use crate::fpuzzles_parser::fpuzzles_test_data::FPUZZLES_TEST_DATA;
 
     use super::*;
 

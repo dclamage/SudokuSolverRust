@@ -1,7 +1,7 @@
 //! Contains the [`FPuzzlesParser`] struct for parsing the f-puzzles format.
 
 pub mod fpuzzles_json;
-mod fpuzzles_test_data;
+pub mod fpuzzles_test_data;
 pub mod prelude;
 
 use itertools::Itertools;
@@ -302,7 +302,7 @@ impl FPuzzlesParser {
         let negative_xv = board.negative.iter().any(|x| x == "xv");
         if negative_xv || !board.xv.is_empty() {
             let mut markers: Vec<StandardOrthogonalPairsMarker> = Vec::new();
-            for cells in board.difference.iter() {
+            for cells in board.xv.iter() {
                 if cells.cells.len() != 2 {
                     continue;
                 }
@@ -409,7 +409,8 @@ impl Default for FPuzzlesParser {
 
 #[cfg(test)]
 mod test {
-    use super::{fpuzzles_test_data::test::FPUZZLES_CLASSICS_DATA, *};
+    use super::fpuzzles_test_data::FPUZZLES_CLASSICS_DATA;
+    use super::*;
 
     fn test_unqiue_solution_from_lzstring(
         parser: &FPuzzlesParser,
