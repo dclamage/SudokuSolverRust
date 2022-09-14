@@ -481,7 +481,7 @@ impl Solver {
                     }
                 }
 
-                if solution_count >= maximum_count {
+                if maximum_count > 0 && solution_count >= maximum_count {
                     return SolutionCountResult::AtLeastCount(solution_count);
                 }
                 continue;
