@@ -7,6 +7,7 @@ use super::client::Client;
 use super::Clients;
 use futures::{FutureExt, StreamExt};
 use standard_constraints::message_handler::*;
+use sudoku_solver_lib::solver::cancellation::Cancellation;
 use tokio::sync::mpsc::{self, Sender};
 use tokio_stream::wrappers::ReceiverStream;
 use uuid::Uuid;
@@ -100,8 +101,11 @@ impl ThreadedHandler {
             move || {
                 // This is the thread for handling messages from the client.
                 // We handle multiple messages before we give up
-                let mut message_handler =
-                    MessageHandler::new(Box::new(SendResultForWS::new(client_sender)));
+                let cancellation = Cancellation::new(move || cancel_token.load(Ordering::SeqCst));
+                let mut message_handler = MessageHandler::new(
+                    Box::new(SendResultForWS::new(client_sender)),
+                    cancellation,
+                );
                 while let Some(message) = handler_recv.blocking_recv() {
                     let message = match message.to_str() {
                         Ok(v) => v.to_string(),
