@@ -24,7 +24,7 @@ async fn main() {
     const AUTHOR: &str = env!("CARGO_PKG_AUTHORS");
     const VERSION: &str = env!("CARGO_PKG_VERSION");
 
-    println!("{} {}", format!("Sudoku Solver").green(), VERSION);
+    println!("{} {}", "Sudoku Solver".to_owned().green(), VERSION);
     println!("{}", AUTHOR);
     println!("Sudoku variant solver utility.");
     println!();
