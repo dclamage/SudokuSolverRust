@@ -17,6 +17,8 @@ use std::{
     sync::Arc,
 };
 
+use self::cancellation::Cancellation;
+
 /// The main entry point for solving a puzzle.
 ///
 /// Use the [`SolverBuilder`] struct to create a [`Solver`].
@@ -346,10 +348,12 @@ impl Solver {
     pub fn find_true_candidates_with_count(
         &self,
         maximum_count: usize,
+        cancellation: impl Into<Cancellation>,
     ) -> TrueCandidatesCountResult {
         let mut board = Box::new(self.board.clone());
         let size = board.size();
         let num_candidates = size * size * size;
+        let cancellation = cancellation.into();
 
         // Run the brute force logic to remove trivially invalid candidates.
         if !self.run_brute_force_logic(&mut board) {
@@ -427,11 +431,14 @@ impl Solver {
                 }
 
                 solution_receiver.candidate = cur_candidate;
-                self.find_solution_count_for_board(
+                if let SolutionCountResult::Error(e) = self.find_solution_count_for_board(
                     &new_board,
                     count_needed,
                     Some(&mut solution_receiver),
-                );
+                    cancellation.clone(),
+                ) {
+                    return TrueCandidatesCountResult::Error(e);
+                }
             }
         }
 
@@ -461,13 +468,18 @@ impl Solver {
         board: &Board,
         maximum_count: usize,
         mut solution_receiver: Option<&mut dyn SolutionReceiver>,
+        cancellation: impl Into<Cancellation>,
     ) -> SolutionCountResult {
         let mut board_stack = Vec::new();
+        let cancellation = cancellation.into();
         board_stack.push(Box::new(board.clone()));
 
         let mut solution_count = 0;
 
         while !board_stack.is_empty() {
+            if cancellation.check() {
+                return SolutionCountResult::Error("cancelled".into());
+            }
             let mut board = board_stack.pop().unwrap();
             if !self.run_brute_force_logic(&mut board) {
                 continue;
@@ -517,8 +529,14 @@ impl Solver {
         &self,
         maximum_count: usize,
         solution_receiver: Option<&mut dyn SolutionReceiver>,
+        cancellation: impl Into<Cancellation>,
     ) -> SolutionCountResult {
-        self.find_solution_count_for_board(&self.board, maximum_count, solution_receiver)
+        self.find_solution_count_for_board(
+            &self.board,
+            maximum_count,
+            solution_receiver,
+            cancellation,
+        )
     }
 }
 
@@ -611,7 +629,7 @@ mod test {
             )
             .build()
             .unwrap();
-        let result = solver.find_true_candidates_with_count(8);
+        let result = solver.find_true_candidates_with_count(8, None);
         assert!(result.is_candidates());
         let board = result.board().unwrap();
         let cu = board.cell_utility();
@@ -639,7 +657,7 @@ mod test {
     #[test]
     fn test_solution_count() {
         let solver = SolverBuilder::default().build().unwrap();
-        let result = solver.find_solution_count(100, None);
+        let result = solver.find_solution_count(100, None, None);
         assert!(result.is_at_least_count());
         assert!(result.count().unwrap() >= 100);
 
@@ -649,7 +667,7 @@ mod test {
             )
             .build()
             .unwrap();
-        let result = solver.find_solution_count(100, None);
+        let result = solver.find_solution_count(100, None, None);
         assert!(result.is_exact_count());
         assert_eq!(result.count().unwrap(), 1);
 
@@ -659,7 +677,7 @@ mod test {
             )
             .build()
             .unwrap();
-        let result = solver.find_solution_count(10000, None);
+        let result = solver.find_solution_count(10000, None, None);
         assert!(result.is_exact_count());
         assert_eq!(result.count().unwrap(), 2357);
 
@@ -669,7 +687,7 @@ mod test {
             )
             .build()
             .unwrap();
-        let result = solver.find_solution_count(2, None);
+        let result = solver.find_solution_count(2, None, None);
         assert!(result.is_none());
 
         let mut receiver = VecSolutionReceiver::new();
@@ -679,7 +697,7 @@ mod test {
             )
             .build()
             .unwrap();
-        let result = solver.find_solution_count(100, Some(&mut receiver));
+        let result = solver.find_solution_count(100, Some(&mut receiver), None);
         assert!(result.is_exact_count());
         assert_eq!(result.count().unwrap(), 2);
 
