@@ -130,7 +130,7 @@ impl MessageHandler {
         let real_cells: Vec<ValueMask>;
         let mut candidate_counts: Option<Vec<usize>> = None;
         if colored {
-            let result = solver.find_true_candidates_with_count(8);
+            let result = solver.find_true_candidates_with_count(8, self.cancellation.clone());
             match result {
                 TrueCandidatesCountResult::None => {
                     return InvalidResponse::new(nonce, "No solutions found.").to_json();
@@ -212,11 +212,12 @@ impl MessageHandler {
     }
 
     fn count(&mut self, nonce: i32, solver: Solver, max_solutions: i32) -> String {
+        let cancellation = self.cancellation.clone();
         let result = if max_solutions > 0 && max_solutions <= 2 {
-            solver.find_solution_count(max_solutions as usize, None)
+            solver.find_solution_count(max_solutions as usize, None, cancellation)
         } else {
             let mut receiver = ReportCountSolutionReceiver::new(nonce, self);
-            solver.find_solution_count(0, Some(&mut receiver))
+            solver.find_solution_count(0, Some(&mut receiver), cancellation)
         };
         match result {
             SolutionCountResult::None => {

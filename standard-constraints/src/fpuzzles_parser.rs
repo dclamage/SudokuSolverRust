@@ -431,7 +431,7 @@ mod test {
 
         let board = FPuzzlesBoard::from_lzstring_json(lzstring).unwrap();
         let solver = parser.parse_board(&board, false).unwrap();
-        let count = solver.find_solution_count(10000, Some(&mut receiver));
+        let count = solver.find_solution_count(10000, Some(&mut receiver), None);
         assert!(count.is_exact_count());
         assert_eq!(count.count().unwrap(), 1);
         assert_eq!(receiver.solution.unwrap(), expected_solution);
