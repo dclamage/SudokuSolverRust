@@ -112,7 +112,7 @@ mod test {
             .build()
             .unwrap();
 
-        let solution_count = solver.find_solution_count(10000, None);
+        let solution_count = solver.find_solution_count(10000, None, None);
         assert!(solution_count.is_exact_count());
         assert_eq!(solution_count.count().unwrap(), 4);
     }
@@ -132,7 +132,7 @@ mod test {
                 .build()
                 .unwrap();
 
-            let solution_count = solver.find_solution_count(10000, None);
+            let solution_count = solver.find_solution_count(10000, None, None);
             assert!(solution_count.is_exact_count());
             assert_eq!(solution_count.count().unwrap(), 1);
         }
