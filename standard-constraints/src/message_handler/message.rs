@@ -4,8 +4,9 @@ use serde::*;
 pub(crate) struct Message {
     nonce: i32,
     command: String,
-    #[serde(rename = "dataType")]
+    #[serde(rename = "dataType", default)]
     data_type: String,
+    #[serde(default)]
     data: String,
 }
 
