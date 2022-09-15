@@ -32,6 +32,6 @@ impl SendResult for SendResultWasm {
 #[wasm_bindgen]
 pub fn solve(message: &str, receive_result: &js_sys::Function) {
     let send_result = Box::new(SendResultWasm::new(receive_result));
-    let mut message_handler = MessageHandler::new(send_result);
+    let mut message_handler = MessageHandler::new(send_result, None);
     message_handler.handle_message(message);
 }
