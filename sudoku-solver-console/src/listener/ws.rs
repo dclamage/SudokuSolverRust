@@ -47,7 +47,8 @@ pub async fn client_connection(ws: WebSocket, clients: Clients) {
             }
         };
 
-        if !handler.is_ready() {
+        if !handler.make_ready().await {
+            println!("Couldn't make solver ready in time, creating a fresh one");
             handler.cancel().await;
             handler = ThreadedHandler::new(client_sender.clone()).await;
         }
@@ -126,6 +127,23 @@ impl ThreadedHandler {
         }
     }
 
+    /// Returns false if could not make ready in time
+    async fn make_ready(&self) -> bool {
+        if !self.ready_token.load(Ordering::SeqCst) {
+            // We're not ready, try and cancel the ongoing operation
+            self.cancel_token.store(true, Ordering::SeqCst);
+            let mut counter = 0;
+            const MAX_COUNT: usize = 100;
+            while counter < MAX_COUNT && !self.ready_token.load(Ordering::SeqCst) {
+                tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
+                counter += 1;
+            }
+            self.cancel_token.store(false, Ordering::SeqCst);
+            return counter < MAX_COUNT;
+        }
+        true
+    }
+
     async fn send(&self, message: Message) -> Result<(), mpsc::error::SendError<Message>> {
         self.sender.send(message).await
     }
@@ -149,9 +167,5 @@ impl ThreadedHandler {
         if counter == MAX_COUNT {
             println!("Handler thread didn't stop in time, CPU may be wasted for a while");
         }
-    }
-
-    fn is_ready(&self) -> bool {
-        self.ready_token.load(Ordering::SeqCst)
     }
 }
