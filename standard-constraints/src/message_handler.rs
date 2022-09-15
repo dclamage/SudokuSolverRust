@@ -6,6 +6,7 @@ use std::time::Instant;
 use crate::prelude::*;
 use itertools::Itertools;
 use sudoku_solver_lib::prelude::*;
+use sudoku_solver_lib::solver::cancellation::Cancellation;
 
 use self::message::*;
 use self::responses::*;
@@ -15,12 +16,16 @@ pub trait SendResult {
 }
 
 pub struct MessageHandler {
-    pub send_result: Box<dyn SendResult>,
+    send_result: Box<dyn SendResult>,
+    cancellation: Cancellation,
 }
 
 impl MessageHandler {
-    pub fn new(send_result: Box<dyn SendResult>) -> Self {
-        Self { send_result }
+    pub fn new(send_result: Box<dyn SendResult>, cancellation: impl Into<Cancellation>) -> Self {
+        Self {
+            send_result,
+            cancellation: cancellation.into(),
+        }
     }
 
     fn send_result(&mut self, result: &str) {
@@ -369,7 +374,7 @@ mod test {
     fn create_test_handler() -> (MessageHandler, Rc<RefCell<Vec<String>>>) {
         let results = Rc::new(RefCell::new(Vec::new()));
         let test_handler = Box::new(TestSendResult::new(results.clone()));
-        (MessageHandler::new(test_handler), results)
+        (MessageHandler::new(test_handler, None), results)
     }
 
     #[test]
