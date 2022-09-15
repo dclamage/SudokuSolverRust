@@ -1,5 +1,6 @@
 //! Constains the [`Solver`] struct which is the main entry point for solving a puzzle.
 
+pub mod cancellation;
 pub mod logical_solve_result;
 pub mod prelude;
 pub mod single_solution_result;
