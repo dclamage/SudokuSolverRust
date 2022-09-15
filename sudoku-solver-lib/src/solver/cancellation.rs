@@ -1,12 +1,16 @@
 //! Cancelling various solver operations requires a [`Cancellation`].
 
+use std::sync::Arc;
+
 /// A Cancellation embodies a check for whether or not to abort a solve process
 ///
 /// If you do not want to provide a cancellation, then most solver methods
-/// take an `Option<Cancellation>` anyway.
-
+/// take an `impl Into<Cancellation>` which you can give `None` to.
+///
+/// This object is an Arc internally and so very cheap to clone
+#[derive(Clone)]
 pub struct Cancellation {
-    func: Box<dyn Fn() -> bool>,
+    func: Arc<dyn Fn() -> bool>,
 }
 
 impl Cancellation {
@@ -33,7 +37,7 @@ impl Cancellation {
         F: (Fn() -> bool) + 'static,
     {
         Self {
-            func: Box::new(func),
+            func: Arc::new(func),
         }
     }
 
@@ -49,7 +53,7 @@ where
 {
     fn from(func: F) -> Self {
         Self {
-            func: Box::new(func),
+            func: Arc::new(func),
         }
     }
 }
