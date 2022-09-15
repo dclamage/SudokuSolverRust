@@ -1,7 +1,10 @@
 [package]
 name = "standard-constraints"
 version = "0.1.0"
-authors = ["Rangsk"]
+authors = ["Rangsk (David Clamage)"]
+description = "Library containing many common Sudoku variant constraints."
+repository = "https://github.com/dclamage/SudokuSolverRust"
+license = "AGPL-3.0-or-later"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
