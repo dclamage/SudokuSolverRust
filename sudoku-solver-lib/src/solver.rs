@@ -17,8 +17,6 @@ use std::{
     sync::Arc,
 };
 
-use self::cancellation::Cancellation;
-
 /// The main entry point for solving a puzzle.
 ///
 /// Use the [`SolverBuilder`] struct to create a [`Solver`].
