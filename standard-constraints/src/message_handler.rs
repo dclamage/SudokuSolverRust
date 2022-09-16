@@ -6,7 +6,6 @@ use std::time::Instant;
 use crate::prelude::*;
 use itertools::Itertools;
 use sudoku_solver_lib::prelude::*;
-use sudoku_solver_lib::solver::cancellation::Cancellation;
 
 use self::message::*;
 use self::responses::*;
@@ -21,10 +20,10 @@ pub struct MessageHandler {
 }
 
 impl MessageHandler {
-    pub fn new(send_result: Box<dyn SendResult>, cancellation: impl Into<Cancellation>) -> Self {
+    pub fn new(send_result: Box<dyn SendResult>) -> Self {
         Self {
             send_result,
-            cancellation: cancellation.into(),
+            cancellation: Cancellation::default(),
         }
     }
 
@@ -32,7 +31,13 @@ impl MessageHandler {
         self.send_result.send_result(result);
     }
 
-    pub fn handle_message(&mut self, message: &str) {
+    pub fn handle_message(&mut self, message: &str, cancellation: Cancellation) {
+        self.cancellation = cancellation;
+
+        if self.cancellation.check() {
+            return;
+        }
+
         let message = match Message::from_json(message) {
             Ok(message) => message,
             Err(error) => {
@@ -351,42 +356,42 @@ impl<'a> SolutionReceiver for ReportCountSolutionReceiver<'a> {
 
 #[cfg(test)]
 mod test {
-    use std::{cell::RefCell, rc::Rc};
+    use std::sync::{Arc, Mutex};
 
     use super::*;
     use crate::fpuzzles_parser::fpuzzles_test_data::FPUZZLES_CLASSICS_DATA;
 
     struct TestSendResult {
-        results: Rc<RefCell<Vec<String>>>,
+        results: Arc<Mutex<Vec<String>>>,
     }
 
     impl TestSendResult {
-        fn new(results: Rc<RefCell<Vec<String>>>) -> Self {
+        fn new(results: Arc<Mutex<Vec<String>>>) -> Self {
             Self { results }
         }
     }
 
     impl SendResult for TestSendResult {
         fn send_result(&mut self, result: &str) {
-            self.results.borrow_mut().push(result.to_string());
+            self.results.lock().unwrap().push(result.to_string());
         }
     }
 
-    fn create_test_handler() -> (MessageHandler, Rc<RefCell<Vec<String>>>) {
-        let results = Rc::new(RefCell::new(Vec::new()));
+    fn create_test_handler() -> (MessageHandler, Arc<Mutex<Vec<String>>>) {
+        let results = Arc::new(Mutex::new(Vec::new()));
         let test_handler = Box::new(TestSendResult::new(results.clone()));
-        (MessageHandler::new(test_handler, None), results)
+        (MessageHandler::new(test_handler), results)
     }
 
     #[test]
     fn test_solve_classic() {
         let (mut handler, results) = create_test_handler();
         for (lzstr, expected_solution) in FPUZZLES_CLASSICS_DATA.iter() {
-            results.borrow_mut().clear();
+            results.lock().unwrap().clear();
 
             let message = Message::new(123, "solve", "fpuzzles", lzstr).to_json();
-            handler.handle_message(&message);
-            let result = results.borrow();
+            handler.handle_message(&message, Cancellation::default());
+            let result = results.lock().unwrap();
             assert_eq!(result.len(), 1);
 
             let response = SolvedResponse::from_json(result[0].as_str()).unwrap();
@@ -416,9 +421,9 @@ mod test {
         let message = Message::new(123, "count", "fpuzzles", lzstr).to_json();
 
         let (mut handler, results) = create_test_handler();
-        handler.handle_message(&message);
+        handler.handle_message(&message, Cancellation::default());
 
-        let result = results.borrow();
+        let result = results.lock().unwrap();
         assert!(result.len() > 0);
 
         let response = CountResponse::from_json(result.last().unwrap().as_str()).unwrap();
@@ -446,9 +451,9 @@ mod test {
         let message = Message::new(123, "truecandidates", "fpuzzles", lzstr).to_json();
 
         let (mut handler, results) = create_test_handler();
-        handler.handle_message(&message);
+        handler.handle_message(&message, Cancellation::default());
 
-        let result = results.borrow();
+        let result = results.lock().unwrap();
         assert!(result.len() == 1);
 
         let response = TrueCandidatesResponse::from_json(result.last().unwrap().as_str()).unwrap();

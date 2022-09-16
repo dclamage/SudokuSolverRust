@@ -1,3 +1,4 @@
+pub use super::cancellation::*;
 pub use super::logical_solve_result::*;
 pub use super::single_solution_result::*;
 pub use super::solution_count_result::*;
