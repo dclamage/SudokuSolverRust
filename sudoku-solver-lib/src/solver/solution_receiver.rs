@@ -7,8 +7,22 @@ use crate::prelude::*;
 /// A trait for receiving solutions from a solver.
 pub trait SolutionReceiver {
     /// Receives a solution from a solver.
+    ///
     /// Return false to end the solution count early.
     fn receive(&mut self, result: Box<Board>) -> bool;
+
+    /// Receive a ping every once in a while with a monotonically increasing number.
+    ///
+    /// The number has no meaning other than to indicate that the solver is still running.
+    ///
+    /// This is useful on platforms like WASM which have no way to quickly retrieve
+    /// the current time, but want to periodically update the UI at a relatively steady rate,
+    /// rather than updating the UI based on the number of solutions found, for which progress
+    /// can vary wildly depending on the puzzle.
+    fn progress_ping(&mut self, progress: usize) {
+        // Do nothing by default.
+        let _ = progress;
+    }
 }
 
 /// A [`SolutionReceiver`] that stores the solutions in a vector.

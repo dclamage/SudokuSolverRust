@@ -1,6 +1,7 @@
 pub mod message;
 pub mod responses;
 
+#[cfg(not(target_arch = "wasm32"))]
 use std::time::Instant;
 
 use crate::prelude::*;
@@ -322,7 +323,10 @@ struct ReportCountSolutionReceiver<'a> {
     count: usize,
     nonce: i32,
     message_handler: &'a mut MessageHandler,
+    #[cfg(not(target_arch = "wasm32"))]
     last_report_time: Instant,
+    #[cfg(target_arch = "wasm32")]
+    last_sent_count: usize,
 }
 
 impl<'a> ReportCountSolutionReceiver<'a> {
@@ -331,8 +335,18 @@ impl<'a> ReportCountSolutionReceiver<'a> {
             count: 0,
             nonce,
             message_handler,
+            #[cfg(not(target_arch = "wasm32"))]
             last_report_time: Instant::now(),
+            #[cfg(target_arch = "wasm32")]
+            last_sent_count: usize::MAX,
         }
+    }
+
+    fn send_progress(&mut self) {
+        let in_progress_response =
+            CountResponse::new(self.nonce, self.count as u64, true).to_json();
+        self.message_handler
+            .send_result(in_progress_response.as_str());
     }
 }
 
@@ -340,17 +354,24 @@ impl<'a> SolutionReceiver for ReportCountSolutionReceiver<'a> {
     fn receive(&mut self, _result: Box<Board>) -> bool {
         self.count += 1;
 
-        let now = Instant::now();
-        if now.duration_since(self.last_report_time).as_millis() >= 1000 {
-            self.last_report_time = now;
-
-            let in_progress_response =
-                CountResponse::new(self.nonce, self.count as u64, true).to_json();
-            self.message_handler
-                .send_result(in_progress_response.as_str());
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            let now = Instant::now();
+            if now.duration_since(self.last_report_time).as_millis() >= 1000 {
+                self.send_progress();
+                self.last_report_time = now;
+            }
         }
 
         true
+    }
+
+    #[cfg(target_arch = "wasm32")]
+    fn progress_ping(&mut self, _progress: usize) {
+        if self.last_sent_count != self.count {
+            self.send_progress();
+            self.last_sent_count = self.count;
+        }
     }
 }
 

@@ -473,11 +473,20 @@ impl Solver {
         board_stack.push(Box::new(board.clone()));
 
         let mut solution_count = 0;
+        let mut progress_count = 0;
 
         while !board_stack.is_empty() {
             if cancellation.check() {
                 return SolutionCountResult::Error("cancelled".into());
             }
+
+            if let Some(solution_receiver) = solution_receiver.as_mut() {
+                progress_count += 1;
+                if progress_count % 50000 == 0 {
+                    solution_receiver.progress_ping(progress_count);
+                }
+            }
+
             let mut board = board_stack.pop().unwrap();
             if !self.run_brute_force_logic(&mut board) {
                 continue;
@@ -486,7 +495,7 @@ impl Solver {
             if board.is_solved() {
                 solution_count += 1;
 
-                if let Some(ref mut solution_receiver) = solution_receiver {
+                if let Some(solution_receiver) = solution_receiver.as_mut() {
                     if !solution_receiver.receive(board) {
                         return SolutionCountResult::AtLeastCount(solution_count);
                     }
