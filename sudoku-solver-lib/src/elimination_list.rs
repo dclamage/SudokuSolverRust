@@ -18,9 +18,7 @@ pub struct EliminationList {
 impl EliminationList {
     /// Create a new empty elimination list.
     pub fn new() -> EliminationList {
-        EliminationList {
-            candidates: BTreeSet::new(),
-        }
+        EliminationList { candidates: BTreeSet::new() }
     }
 
     /// Get the number of candidates in the elimination list.
@@ -205,9 +203,7 @@ impl FromIterator<CandidateIndex> for EliminationList {
     where
         I: IntoIterator<Item = CandidateIndex>,
     {
-        EliminationList {
-            candidates: iter.into_iter().collect(),
-        }
+        EliminationList { candidates: iter.into_iter().collect() }
     }
 }
 

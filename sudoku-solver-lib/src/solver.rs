@@ -263,9 +263,7 @@ impl Solver {
                     board_stack.push(board);
                 }
             } else {
-                return SingleSolutionResult::Error(
-                    "Internal error finding a cell to check.".to_owned(),
-                );
+                return SingleSolutionResult::Error("Internal error finding a cell to check.".to_owned());
             }
         }
 
@@ -321,8 +319,7 @@ impl Solver {
                 let solution_result = self.find_random_solution_for_board(&new_board);
                 if let SingleSolutionResult::Solved(solution) = solution_result {
                     for (cell, mask) in solution.all_cell_masks() {
-                        true_cell_values[cell.index()] =
-                            true_cell_values[cell.index()] | mask.unsolved();
+                        true_cell_values[cell.index()] = true_cell_values[cell.index()] | mask.unsolved();
                     }
                 }
             }
@@ -377,8 +374,7 @@ impl Solver {
                 }
 
                 for (cell, mask) in board.all_cell_masks() {
-                    self.true_cell_values[cell.index()] =
-                        self.true_cell_values[cell.index()] | mask.unsolved();
+                    self.true_cell_values[cell.index()] = self.true_cell_values[cell.index()] | mask.unsolved();
                     let candidate_index = cell.candidate(mask.value());
                     self.num_solutions_per_candidate[candidate_index.index()] += 1;
                 }
@@ -416,8 +412,7 @@ impl Solver {
             let mask = mask;
             for value in mask {
                 let cur_candidate = cell.candidate(value);
-                let cur_candidate_count =
-                    solution_receiver.num_solutions_per_candidate[cur_candidate.index()];
+                let cur_candidate_count = solution_receiver.num_solutions_per_candidate[cur_candidate.index()];
                 if cur_candidate_count >= maximum_count {
                     continue;
                 }
@@ -454,10 +449,7 @@ impl Solver {
         if board.is_solved() {
             TrueCandidatesCountResult::Solved(board)
         } else {
-            TrueCandidatesCountResult::Candidates(
-                board,
-                solution_receiver.num_solutions_per_candidate,
-            )
+            TrueCandidatesCountResult::Candidates(board, solution_receiver.num_solutions_per_candidate)
         }
     }
 
@@ -518,9 +510,7 @@ impl Solver {
                     }
                 }
             } else {
-                return SolutionCountResult::Error(
-                    "Internal error finding a cell to check.".to_owned(),
-                );
+                return SolutionCountResult::Error("Internal error finding a cell to check.".to_owned());
             }
         }
 
@@ -538,12 +528,7 @@ impl Solver {
         solution_receiver: Option<&mut dyn SolutionReceiver>,
         cancellation: impl Into<Cancellation>,
     ) -> SolutionCountResult {
-        self.find_solution_count_for_board(
-            &self.board,
-            maximum_count,
-            solution_receiver,
-            cancellation,
-        )
+        self.find_solution_count_for_board(&self.board, maximum_count, solution_receiver, cancellation)
     }
 }
 
@@ -568,10 +553,7 @@ mod test {
         assert!(board.is_solved());
 
         let solution = board.to_string();
-        assert_eq!(
-            solution,
-            "123456789456789123789123456214365897365897214897214365531642978642978531978531642"
-        );
+        assert_eq!(solution, "123456789456789123789123456214365897365897214897214365531642978642978531978531642");
     }
 
     #[test]
@@ -595,17 +577,11 @@ mod test {
 
         let result = solver.find_true_candidates();
         assert!(result.is_solved());
-        assert!(result
-            .board()
-            .unwrap()
-            .all_cell_masks()
-            .all(|(_, mask)| mask.count() == 9));
+        assert!(result.board().unwrap().all_cell_masks().all(|(_, mask)| mask.count() == 9));
 
         // Test phistomefel ring
         let solver = SolverBuilder::default()
-            .with_givens_string(
-                "....................23456....4...2....5...3....6...4....74365....................",
-            )
+            .with_givens_string("....................23456....4...2....5...3....6...4....74365....................")
             .build()
             .unwrap();
         let result = solver.find_true_candidates();
@@ -631,19 +607,14 @@ mod test {
     #[test]
     fn test_true_candidates_with_count() {
         let solver = SolverBuilder::default()
-            .with_givens_string(
-                "1...2..4...7...3...6..1..5..7......4.4.5.9..6.....8.3.4..2.........5.....8...6.7.",
-            )
+            .with_givens_string("1...2..4...7...3...6..1..5..7......4.4.5.9..6.....8.3.4..2.........5.....8...6.7.")
             .build()
             .unwrap();
         let result = solver.find_true_candidates_with_count(8, None);
         assert!(result.is_candidates());
         let board = result.board().unwrap();
         let cu = board.cell_utility();
-        assert_eq!(
-            board.cell(cu.cell(0, 1)),
-            ValueMask::from_values(&[3, 5, 9])
-        );
+        assert_eq!(board.cell(cu.cell(0, 1)), ValueMask::from_values(&[3, 5, 9]));
         assert_eq!(board.cell(cu.cell(1, 5)), ValueMask::from_values(&[4, 5]));
 
         let candidates = result.candidate_counts().unwrap();
@@ -669,9 +640,7 @@ mod test {
         assert!(result.count().unwrap() >= 100);
 
         let solver = SolverBuilder::default()
-            .with_givens_string(
-                "........1....23.4.....452....1.3.....3...4...6..7....8..6.....9.5....62.7.9...1..",
-            )
+            .with_givens_string("........1....23.4.....452....1.3.....3...4...6..7....8..6.....9.5....62.7.9...1..")
             .build()
             .unwrap();
         let result = solver.find_solution_count(100, None, None);
@@ -679,9 +648,7 @@ mod test {
         assert_eq!(result.count().unwrap(), 1);
 
         let solver = SolverBuilder::default()
-            .with_givens_string(
-                ".............23.4.....452....1.3.....3...4...6..7....8..6.....9.5....62.7.9...1..",
-            )
+            .with_givens_string(".............23.4.....452....1.3.....3...4...6..7....8..6.....9.5....62.7.9...1..")
             .build()
             .unwrap();
         let result = solver.find_solution_count(10000, None, None);
@@ -689,9 +656,7 @@ mod test {
         assert_eq!(result.count().unwrap(), 2357);
 
         let solver = SolverBuilder::default()
-            .with_givens_string(
-                "1...................23456....4...2....5...3....6...4....74365....................",
-            )
+            .with_givens_string("1...................23456....4...2....5...3....6...4....74365....................")
             .build()
             .unwrap();
         let result = solver.find_solution_count(2, None, None);
@@ -699,9 +664,7 @@ mod test {
 
         let mut receiver = VecSolutionReceiver::new();
         let solver = SolverBuilder::default()
-            .with_givens_string(
-                "8...62..1.5.....7..197...5........9.....28..3.....36.54...1..6...74...3.5.2......",
-            )
+            .with_givens_string("8...62..1.5.....7..197...5........9.....28..3.....36.54...1..6...74...3.5.2......")
             .build()
             .unwrap();
         let result = solver.find_solution_count(100, Some(&mut receiver), None);
@@ -710,16 +673,20 @@ mod test {
 
         let solutions = receiver.take_solutions();
         assert_eq!(solutions.len(), 2);
-        assert!(solutions.iter().any(|b| b.to_string() == "873562941654891372219734856326157498945628713781943625438219567167485239592376184"));
-        assert!(solutions.iter().any(|b| b.to_string() == "873562941254891376619734852326157498945628713781943625438219567167485239592376184"));
+        assert!(solutions
+            .iter()
+            .any(|b| b.to_string()
+                == "873562941654891372219734856326157498945628713781943625438219567167485239592376184"));
+        assert!(solutions
+            .iter()
+            .any(|b| b.to_string()
+                == "873562941254891376619734852326157498945628713781943625438219567167485239592376184"));
     }
 
     #[test]
     fn test_single_logical_step() {
         let mut solver = SolverBuilder::default()
-            .with_givens_string(
-                "8...62..125.....7..197...5........9.....28..3.....36.54...1..6...74...3.5.2......",
-            )
+            .with_givens_string("8...62..125.....7..197...5........9.....28..3.....36.54...1..6...74...3.5.2......")
             .build()
             .unwrap();
         let result = solver.run_single_logical_step();
@@ -731,9 +698,7 @@ mod test {
     #[test]
     fn test_logical_solve() {
         let mut solver = SolverBuilder::default()
-            .with_givens_string(
-                "8...62..125.....7..197...5........9.....28..3.....36.54...1..6...74...3.5.2......",
-            )
+            .with_givens_string("8...62..125.....7..197...5........9.....28..3.....36.54...1..6...74...3.5.2......")
             .build()
             .unwrap();
         let result = solver.run_logical_solve();

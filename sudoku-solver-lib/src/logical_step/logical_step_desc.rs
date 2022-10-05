@@ -22,20 +22,12 @@ pub struct LogicalStepDesc {
 impl LogicalStepDesc {
     /// Creates a new instance.
     pub fn new(step: &str, sub_steps: &LogicalStepDescList) -> Self {
-        Self {
-            step: step.to_owned(),
-            sub_steps: sub_steps.with_depth(1),
-            depth: 0,
-        }
+        Self { step: step.to_owned(), sub_steps: sub_steps.with_depth(1), depth: 0 }
     }
 
     /// Creates a new instance from a description string an no sub-steps.
     pub fn from_desc(desc: &str) -> Self {
-        Self {
-            step: desc.to_owned(),
-            sub_steps: LogicalStepDescList::new(),
-            depth: 0,
-        }
+        Self { step: desc.to_owned(), sub_steps: LogicalStepDescList::new(), depth: 0 }
     }
 
     /// Creates a new instance from a description and a list of eliminations.
@@ -48,19 +40,11 @@ impl LogicalStepDesc {
     /// string.
     pub fn with_prefix(&self, prefix: &str) -> Self {
         let step = format!("{}{}", prefix, self.step);
-        Self {
-            step,
-            sub_steps: self.sub_steps.clone(),
-            depth: self.depth,
-        }
+        Self { step, sub_steps: self.sub_steps.clone(), depth: self.depth }
     }
 
     pub(crate) fn with_depth(&self, depth: usize) -> LogicalStepDesc {
-        LogicalStepDesc {
-            step: self.step.clone(),
-            sub_steps: self.sub_steps.with_depth(depth + 1),
-            depth,
-        }
+        LogicalStepDesc { step: self.step.clone(), sub_steps: self.sub_steps.with_depth(depth + 1), depth }
     }
 
     fn indent_str(&self) -> String {
@@ -78,21 +62,13 @@ impl LogicalStepDesc {
 
 impl From<&str> for LogicalStepDesc {
     fn from(step: &str) -> Self {
-        Self {
-            step: step.to_owned(),
-            sub_steps: LogicalStepDescList::new(),
-            depth: 0,
-        }
+        Self { step: step.to_owned(), sub_steps: LogicalStepDescList::new(), depth: 0 }
     }
 }
 
 impl From<String> for LogicalStepDesc {
     fn from(step: String) -> Self {
-        Self {
-            step,
-            sub_steps: LogicalStepDescList::new(),
-            depth: 0,
-        }
+        Self { step, sub_steps: LogicalStepDescList::new(), depth: 0 }
     }
 }
 

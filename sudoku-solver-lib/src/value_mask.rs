@@ -31,9 +31,7 @@ impl BitAnd for ValueMask {
     type Output = ValueMask;
 
     fn bitand(self, rhs: ValueMask) -> Self {
-        ValueMask {
-            mask: self.mask & rhs.mask,
-        }
+        ValueMask { mask: self.mask & rhs.mask }
     }
 }
 
@@ -41,9 +39,7 @@ impl BitOr for ValueMask {
     type Output = ValueMask;
 
     fn bitor(self, rhs: ValueMask) -> Self {
-        ValueMask {
-            mask: self.mask | rhs.mask,
-        }
+        ValueMask { mask: self.mask | rhs.mask }
     }
 }
 
@@ -51,9 +47,7 @@ impl BitXor for ValueMask {
     type Output = ValueMask;
 
     fn bitxor(self, rhs: ValueMask) -> Self {
-        ValueMask {
-            mask: self.mask ^ rhs.mask,
-        }
+        ValueMask { mask: self.mask ^ rhs.mask }
     }
 }
 
@@ -112,9 +106,7 @@ impl ValueMask {
     /// assert!(mask.has(9));
     /// ```
     pub fn from_all_values(size: usize) -> Self {
-        ValueMask {
-            mask: (1 << size) - 1,
-        }
+        ValueMask { mask: (1 << size) - 1 }
     }
 
     /// Creates a new ValueMask with a single value set.
@@ -134,9 +126,7 @@ impl ValueMask {
     /// assert!(!mask.has(9));
     /// ```
     pub fn from_value(value: usize) -> Self {
-        ValueMask {
-            mask: 1 << (value - 1),
-        }
+        ValueMask { mask: 1 << (value - 1) }
     }
 
     /// Create a new ValueMask with multiple values set.
@@ -191,9 +181,7 @@ impl ValueMask {
     /// assert!(!mask.has(9));
     /// ```
     pub fn from_lower(val: usize) -> Self {
-        ValueMask {
-            mask: (1u32 << (val - 1)) - 1,
-        }
+        ValueMask { mask: (1u32 << (val - 1)) - 1 }
     }
 
     /// Creates a mask with all values lower than or equal to the given value.
@@ -224,9 +212,7 @@ impl ValueMask {
     /// assert!(!mask.has(9));
     /// ```
     pub fn from_lower_equal(val: usize) -> Self {
-        ValueMask {
-            mask: (1u32 << val) - 1,
-        }
+        ValueMask { mask: (1u32 << val) - 1 }
     }
 
     /// Creates a mask with all values strictly higher than the given value.
@@ -350,8 +336,7 @@ impl ValueMask {
     /// assert!(!mask.has(9));
     /// ```
     pub fn from_between_exclusive(low: usize, high: usize, size: usize) -> Self {
-        Self::from_all_values(size)
-            & !(Self::from_lower_equal(low) | Self::from_higher_equal(high, size))
+        Self::from_all_values(size) & !(Self::from_lower_equal(low) | Self::from_higher_equal(high, size))
     }
 
     /// Returns the raw mask as a `u32`.
@@ -413,9 +398,7 @@ impl ValueMask {
     /// ```
     #[must_use]
     pub fn solved(self) -> Self {
-        ValueMask {
-            mask: self.mask | ValueMask::VALUE_SOLVED_MASK,
-        }
+        ValueMask { mask: self.mask | ValueMask::VALUE_SOLVED_MASK }
     }
 
     /// Returns a mask marked as unsolved.
@@ -433,9 +416,7 @@ impl ValueMask {
     /// ```
     #[must_use]
     pub fn unsolved(self) -> Self {
-        ValueMask {
-            mask: self.mask & !ValueMask::VALUE_SOLVED_MASK,
-        }
+        ValueMask { mask: self.mask & !ValueMask::VALUE_SOLVED_MASK }
     }
 
     /// Returns a mask with all unset values.
@@ -462,9 +443,7 @@ impl ValueMask {
     #[must_use]
     pub fn inverted(self, size: usize) -> Self {
         let all_values = Self::from_all_values(size).raw();
-        ValueMask {
-            mask: !self.mask & all_values,
-        }
+        ValueMask { mask: !self.mask & all_values }
     }
 
     /// Returns true if no values are possible.
@@ -542,9 +521,7 @@ impl ValueMask {
     /// ```
     #[must_use]
     pub fn with(self, value: usize) -> Self {
-        ValueMask {
-            mask: self.mask | (1 << (value - 1)),
-        }
+        ValueMask { mask: self.mask | (1 << (value - 1)) }
     }
 
     /// Returns a mask with the value removed.
@@ -560,9 +537,7 @@ impl ValueMask {
     /// ```
     #[must_use]
     pub fn without(self, value: usize) -> Self {
-        ValueMask {
-            mask: self.mask & !(1 << (value - 1)),
-        }
+        ValueMask { mask: self.mask & !(1 << (value - 1)) }
     }
 
     /// Returns a mask with all values from the mask removed except the given value.
@@ -580,9 +555,7 @@ impl ValueMask {
     /// ```
     #[must_use]
     pub fn with_only(self, value: usize) -> Self {
-        ValueMask {
-            mask: self.mask & (Self::VALUE_SOLVED_MASK | (1 << (value - 1))),
-        }
+        ValueMask { mask: self.mask & (Self::VALUE_SOLVED_MASK | (1 << (value - 1))) }
     }
 
     /// Counts the number of set values.
@@ -828,9 +801,7 @@ impl IntoIterator for ValueMask {
     /// assert_eq!(mask.into_iter().collect::<Vec<usize>>(), vec![1, 2, 3, 4, 5, 6, 7, 8, 9]);
     /// ```
     fn into_iter(self) -> Self::IntoIter {
-        ValueMaskIter {
-            mask: self.value_bits(),
-        }
+        ValueMaskIter { mask: self.value_bits() }
     }
 }
 
@@ -863,56 +834,23 @@ mod test {
         assert_eq!(ValueMask::from_values(&[1, 2]).to_string(), "1,2");
         assert_eq!(ValueMask::from_values(&[1, 5]).to_string(), "1,5");
         assert_eq!(ValueMask::from_values(&[1, 5]).solved().to_string(), "1,5");
-        assert_eq!(
-            ValueMask::from_values(&[1, 2, 3, 4, 5, 6, 7, 8, 9]).to_string(),
-            "1,2,3,4,5,6,7,8,9"
-        );
+        assert_eq!(ValueMask::from_values(&[1, 2, 3, 4, 5, 6, 7, 8, 9]).to_string(), "1,2,3,4,5,6,7,8,9");
     }
 
     #[test]
     fn test_mask_ranges() {
-        assert_eq!(
-            ValueMask::from_all_values(9).value_bits(),
-            0b0000_0000_0000_0000_0000_0001_1111_1111
-        );
-        assert_eq!(
-            ValueMask::from_all_values(16).value_bits(),
-            0b0000_0000_0000_0000_1111_1111_1111_1111
-        );
+        assert_eq!(ValueMask::from_all_values(9).value_bits(), 0b0000_0000_0000_0000_0000_0001_1111_1111);
+        assert_eq!(ValueMask::from_all_values(16).value_bits(), 0b0000_0000_0000_0000_1111_1111_1111_1111);
 
         let size = 9;
-        assert_eq!(
-            ValueMask::from_lower(2).value_bits(),
-            0b0000_0000_0000_0000_0000_0000_0000_0001
-        );
-        assert_eq!(
-            ValueMask::from_lower(4).value_bits(),
-            0b0000_0000_0000_0000_0000_0000_0000_0111
-        );
-        assert_eq!(
-            ValueMask::from_lower_equal(2).value_bits(),
-            0b0000_0000_0000_0000_0000_0000_0000_0011
-        );
-        assert_eq!(
-            ValueMask::from_lower_equal(4).value_bits(),
-            0b0000_0000_0000_0000_0000_0000_0000_1111
-        );
-        assert_eq!(
-            ValueMask::from_higher(2, size).value_bits(),
-            0b0000_0000_0000_0000_0000_0001_1111_1100
-        );
-        assert_eq!(
-            ValueMask::from_higher(4, size).value_bits(),
-            0b0000_0000_0000_0000_0000_0001_1111_0000
-        );
-        assert_eq!(
-            ValueMask::from_higher_equal(2, size).value_bits(),
-            0b0000_0000_0000_0000_0000_0001_1111_1110
-        );
-        assert_eq!(
-            ValueMask::from_higher_equal(4, size).value_bits(),
-            0b0000_0000_0000_0000_0000_0001_1111_1000
-        );
+        assert_eq!(ValueMask::from_lower(2).value_bits(), 0b0000_0000_0000_0000_0000_0000_0000_0001);
+        assert_eq!(ValueMask::from_lower(4).value_bits(), 0b0000_0000_0000_0000_0000_0000_0000_0111);
+        assert_eq!(ValueMask::from_lower_equal(2).value_bits(), 0b0000_0000_0000_0000_0000_0000_0000_0011);
+        assert_eq!(ValueMask::from_lower_equal(4).value_bits(), 0b0000_0000_0000_0000_0000_0000_0000_1111);
+        assert_eq!(ValueMask::from_higher(2, size).value_bits(), 0b0000_0000_0000_0000_0000_0001_1111_1100);
+        assert_eq!(ValueMask::from_higher(4, size).value_bits(), 0b0000_0000_0000_0000_0000_0001_1111_0000);
+        assert_eq!(ValueMask::from_higher_equal(2, size).value_bits(), 0b0000_0000_0000_0000_0000_0001_1111_1110);
+        assert_eq!(ValueMask::from_higher_equal(4, size).value_bits(), 0b0000_0000_0000_0000_0000_0001_1111_1000);
         assert_eq!(
             ValueMask::from_between_exclusive(1, 5, size).value_bits(),
             0b0000_0000_0000_0000_0000_0000_0000_1110
@@ -934,34 +872,13 @@ mod test {
         assert_eq!(ValueMask::from_value(7).value(), 7);
         assert_eq!(ValueMask::from_value(8).value(), 8);
         assert_eq!(ValueMask::from_value(9).value(), 9);
-        assert_eq!(
-            ValueMask::from(0b0000_0000_0000_0000_0000_0000_0000_0001).value(),
-            1
-        );
-        assert_eq!(
-            ValueMask::from(0b0000_0000_0000_0000_0000_0000_0000_0010).value(),
-            2
-        );
-        assert_eq!(
-            ValueMask::from(0b0000_0000_0000_0000_0000_0001_0000_0000).value(),
-            9
-        );
-        assert_eq!(
-            ValueMask::from(0b1000_0000_0000_0000_0000_0001_0000_0000).value(),
-            9
-        );
-        assert_eq!(
-            ValueMask::from(0b0000_0000_0000_0000_0000_0001_1100_1000).min(),
-            4
-        );
-        assert_eq!(
-            ValueMask::from(0b0000_0000_0000_0000_0000_0001_1100_1000).max(),
-            9
-        );
-        assert_eq!(
-            ValueMask::from(0b1000_0000_0000_0000_0000_0001_1100_1000).max(),
-            9
-        );
+        assert_eq!(ValueMask::from(0b0000_0000_0000_0000_0000_0000_0000_0001).value(), 1);
+        assert_eq!(ValueMask::from(0b0000_0000_0000_0000_0000_0000_0000_0010).value(), 2);
+        assert_eq!(ValueMask::from(0b0000_0000_0000_0000_0000_0001_0000_0000).value(), 9);
+        assert_eq!(ValueMask::from(0b1000_0000_0000_0000_0000_0001_0000_0000).value(), 9);
+        assert_eq!(ValueMask::from(0b0000_0000_0000_0000_0000_0001_1100_1000).min(), 4);
+        assert_eq!(ValueMask::from(0b0000_0000_0000_0000_0000_0001_1100_1000).max(), 9);
+        assert_eq!(ValueMask::from(0b1000_0000_0000_0000_0000_0001_1100_1000).max(), 9);
         assert_eq!(ValueMask::from_values(&[3, 5, 8]).min(), 3);
         assert_eq!(ValueMask::from_values(&[3, 5, 8]).max(), 8);
         assert!(ValueMask::from_value(3).has(3));
@@ -971,30 +888,12 @@ mod test {
     #[test]
     fn test_mask_iterator() {
         assert_equal(ValueMask::from(0), vec![]);
-        assert_equal(
-            ValueMask::from(0b0000_0000_0000_0000_0000_0000_0000_0001),
-            vec![1],
-        );
-        assert_equal(
-            ValueMask::from(0b1000_0000_0000_0000_0000_0000_0000_0001),
-            vec![1],
-        );
-        assert_equal(
-            ValueMask::from(0b0000_0000_0000_0000_0000_0000_0000_0010),
-            vec![2],
-        );
-        assert_equal(
-            ValueMask::from(0b0000_0000_0000_0000_0000_0000_0001_0010),
-            vec![2, 5],
-        );
-        assert_equal(
-            ValueMask::from(0b0000_0000_0000_0000_0000_0001_1111_1111),
-            vec![1, 2, 3, 4, 5, 6, 7, 8, 9],
-        );
-        assert_equal(
-            ValueMask::from(0b1000_0000_0000_0000_0000_0001_1111_1111),
-            vec![1, 2, 3, 4, 5, 6, 7, 8, 9],
-        );
+        assert_equal(ValueMask::from(0b0000_0000_0000_0000_0000_0000_0000_0001), vec![1]);
+        assert_equal(ValueMask::from(0b1000_0000_0000_0000_0000_0000_0000_0001), vec![1]);
+        assert_equal(ValueMask::from(0b0000_0000_0000_0000_0000_0000_0000_0010), vec![2]);
+        assert_equal(ValueMask::from(0b0000_0000_0000_0000_0000_0000_0001_0010), vec![2, 5]);
+        assert_equal(ValueMask::from(0b0000_0000_0000_0000_0000_0001_1111_1111), vec![1, 2, 3, 4, 5, 6, 7, 8, 9]);
+        assert_equal(ValueMask::from(0b1000_0000_0000_0000_0000_0001_1111_1111), vec![1, 2, 3, 4, 5, 6, 7, 8, 9]);
         assert_equal(ValueMask::from_values(&[1, 4, 8]), vec![1, 4, 8]);
     }
 }

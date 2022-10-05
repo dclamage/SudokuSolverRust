@@ -61,9 +61,7 @@ impl LogicalStep for HiddenSingle {
                         return LogicalStepResult::Changed(desc);
                     } else {
                         let desc: Option<LogicalStepDesc> = if generate_description {
-                            Some(
-                                format!("In {}: {} cannot be set to {}", house, cell, value).into(),
-                            )
+                            Some(format!("In {}: {} cannot be set to {}", house, cell, value).into())
                         } else {
                             None
                         };

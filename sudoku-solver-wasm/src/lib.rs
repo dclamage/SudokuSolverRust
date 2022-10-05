@@ -16,9 +16,7 @@ struct SendResultWasm {
 
 impl SendResultWasm {
     fn new(receive_result: &js_sys::Function) -> Self {
-        Self {
-            receive_result: receive_result.clone(),
-        }
+        Self { receive_result: receive_result.clone() }
     }
 }
 

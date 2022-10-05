@@ -21,10 +21,7 @@ impl LogicalStep for AllNakedSingles {
     }
 
     fn run(&self, board: &mut Board, generate_description: bool) -> LogicalStepResult {
-        assert!(
-            !generate_description,
-            "AllNakedSingles should not be used during logical solves"
-        );
+        assert!(!generate_description, "AllNakedSingles should not be used during logical solves");
 
         let mut result = LogicalStepResult::None;
         loop {
@@ -75,8 +72,7 @@ mod test {
         assert!(all_naked_singles.run(&mut board, false).is_none());
 
         // Set up the board so that the entire thing solves with just naked singles
-        let board_str =
-            "5.6....29.9....13..4...376.........232.5......5..186.32..64.38..1.37529....821.7.";
+        let board_str = "5.6....29.9....13..4...376.........232.5......5..186.32..64.38..1.37529....821.7.";
         board_str.chars().enumerate().for_each(|(i, c)| {
             if let Some(value) = c.to_digit(10) {
                 assert!(board.set_solved(cu.cell_index(i), value as usize));

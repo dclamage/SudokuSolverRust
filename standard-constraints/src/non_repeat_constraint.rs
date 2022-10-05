@@ -14,10 +14,7 @@ pub struct NonRepeatConstraint {
 
 impl NonRepeatConstraint {
     pub fn new(specific_name: &str, cells: Vec<CellIndex>) -> Self {
-        Self {
-            specific_name: specific_name.to_owned(),
-            cells,
-        }
+        Self { specific_name: specific_name.to_owned(), cells }
     }
 
     pub fn from_diagonalp(size: usize) -> Self {
@@ -73,9 +70,7 @@ mod test {
         let solver = SolverBuilder::new(size)
             .with_constraint(Arc::new(NonRepeatConstraint::from_diagonalp(size)))
             .with_constraint(Arc::new(NonRepeatConstraint::from_diagonaln(size)))
-            .with_givens_string(
-                "......78............9.........................1.5.........4.....3....5.1....98...",
-            )
+            .with_givens_string("......78............9.........................1.5.........4.....3....5.1....98...")
             .build()
             .unwrap();
         assert_eq!(solver.board().houses().len(), 29);

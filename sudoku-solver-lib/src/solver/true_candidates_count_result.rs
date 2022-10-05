@@ -37,9 +37,7 @@ impl TrueCandidatesCountResult {
             TrueCandidatesCountResult::None
             | TrueCandidatesCountResult::Error(_)
             | TrueCandidatesCountResult::Solved(_) => None,
-            TrueCandidatesCountResult::Candidates(_, candidate_counts) => {
-                Some(candidate_counts.clone())
-            }
+            TrueCandidatesCountResult::Candidates(_, candidate_counts) => Some(candidate_counts.clone()),
         }
     }
 }

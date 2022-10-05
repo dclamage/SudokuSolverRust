@@ -22,10 +22,7 @@ impl CandidateIndex {
 
     /// Creates a new instance from a cell index and value.
     pub fn from_cv(cell: CellIndex, value: usize) -> Self {
-        Self {
-            index: cell.index() * cell.size() + value - 1,
-            size: cell.size(),
-        }
+        Self { index: cell.index() * cell.size() + value - 1, size: cell.size() }
     }
 
     /// Gets the index of the candidate.
@@ -95,18 +92,9 @@ mod tests {
     fn test_candidate_index() {
         assert_eq!(CandidateIndex::from_cv(CellIndex::new(0, 9), 1).index(), 0);
         assert_eq!(CandidateIndex::from_cv(CellIndex::new(1, 9), 1).index(), 9);
-        assert_eq!(
-            CandidateIndex::from_cv(CellIndex::new(1, 16), 2).index(),
-            17
-        );
+        assert_eq!(CandidateIndex::from_cv(CellIndex::new(1, 16), 2).index(), 17);
         assert_eq!(CandidateIndex::from_cv(CellIndex::new(9, 8), 2).index(), 73);
-        assert_eq!(
-            CandidateIndex::from_cv(CellIndex::new(40, 9), 5).index(),
-            364
-        );
-        assert_eq!(
-            CandidateIndex::from_cv(CellIndex::new(80, 9), 9).index(),
-            728
-        );
+        assert_eq!(CandidateIndex::from_cv(CellIndex::new(40, 9), 5).index(), 364);
+        assert_eq!(CandidateIndex::from_cv(CellIndex::new(80, 9), 9).index(), 728);
     }
 }

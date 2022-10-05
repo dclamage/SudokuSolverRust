@@ -23,10 +23,7 @@ impl CellIndex {
 
     /// Creates a new instance from a row and column index.
     pub fn from_rc(row: usize, column: usize, size: usize) -> Self {
-        Self {
-            index: row * size + column,
-            size,
-        }
+        Self { index: row * size + column, size }
     }
 
     /// Gets the index of the cell.
@@ -175,8 +172,7 @@ impl CellIndex {
     pub fn taxicab_distance(self, other: Self) -> usize {
         let (row1, column1) = self.rc();
         let (row2, column2) = other.rc();
-        (row1 as isize - row2 as isize).unsigned_abs()
-            + (column1 as isize - column2 as isize).unsigned_abs()
+        (row1 as isize - row2 as isize).unsigned_abs() + (column1 as isize - column2 as isize).unsigned_abs()
     }
 
     /// Determines if two cells are orthogonally adjacent.
@@ -235,8 +231,7 @@ impl CellIndex {
     pub fn is_diagonally_adjacent(self, other: Self) -> bool {
         let (row1, column1) = self.rc();
         let (row2, column2) = other.rc();
-        (row1 as isize - row2 as isize).abs() == 1
-            && (column1 as isize - column2 as isize).abs() == 1
+        (row1 as isize - row2 as isize).abs() == 1 && (column1 as isize - column2 as isize).abs() == 1
     }
 
     /// Determines if two cells are adjacent.
@@ -462,199 +457,79 @@ mod test {
     #[test]
     fn test_orthogonally_adjacent_cells() {
         let cu = crate::cell_utility::CellUtility::new(9);
-        assert_eq!(
-            cu.cell(0, 0).orthogonally_adjacent_cells(),
-            vec![cu.cell(0, 1), cu.cell(1, 0)]
-        );
-        assert_eq!(
-            cu.cell(0, 1).orthogonally_adjacent_cells(),
-            vec![cu.cell(0, 0), cu.cell(0, 2), cu.cell(1, 1)]
-        );
-        assert_eq!(
-            cu.cell(0, 2).orthogonally_adjacent_cells(),
-            vec![cu.cell(0, 1), cu.cell(0, 3), cu.cell(1, 2)]
-        );
-        assert_eq!(
-            cu.cell(0, 3).orthogonally_adjacent_cells(),
-            vec![cu.cell(0, 2), cu.cell(0, 4), cu.cell(1, 3)]
-        );
-        assert_eq!(
-            cu.cell(0, 4).orthogonally_adjacent_cells(),
-            vec![cu.cell(0, 3), cu.cell(0, 5), cu.cell(1, 4)]
-        );
-        assert_eq!(
-            cu.cell(0, 5).orthogonally_adjacent_cells(),
-            vec![cu.cell(0, 4), cu.cell(0, 6), cu.cell(1, 5)]
-        );
-        assert_eq!(
-            cu.cell(0, 6).orthogonally_adjacent_cells(),
-            vec![cu.cell(0, 5), cu.cell(0, 7), cu.cell(1, 6)]
-        );
-        assert_eq!(
-            cu.cell(0, 7).orthogonally_adjacent_cells(),
-            vec![cu.cell(0, 6), cu.cell(0, 8), cu.cell(1, 7)]
-        );
-        assert_eq!(
-            cu.cell(0, 8).orthogonally_adjacent_cells(),
-            vec![cu.cell(0, 7), cu.cell(1, 8)]
-        );
-        assert_eq!(
-            cu.cell(1, 0).orthogonally_adjacent_cells(),
-            vec![cu.cell(0, 0), cu.cell(1, 1), cu.cell(2, 0)]
-        );
+        assert_eq!(cu.cell(0, 0).orthogonally_adjacent_cells(), vec![cu.cell(0, 1), cu.cell(1, 0)]);
+        assert_eq!(cu.cell(0, 1).orthogonally_adjacent_cells(), vec![cu.cell(0, 0), cu.cell(0, 2), cu.cell(1, 1)]);
+        assert_eq!(cu.cell(0, 2).orthogonally_adjacent_cells(), vec![cu.cell(0, 1), cu.cell(0, 3), cu.cell(1, 2)]);
+        assert_eq!(cu.cell(0, 3).orthogonally_adjacent_cells(), vec![cu.cell(0, 2), cu.cell(0, 4), cu.cell(1, 3)]);
+        assert_eq!(cu.cell(0, 4).orthogonally_adjacent_cells(), vec![cu.cell(0, 3), cu.cell(0, 5), cu.cell(1, 4)]);
+        assert_eq!(cu.cell(0, 5).orthogonally_adjacent_cells(), vec![cu.cell(0, 4), cu.cell(0, 6), cu.cell(1, 5)]);
+        assert_eq!(cu.cell(0, 6).orthogonally_adjacent_cells(), vec![cu.cell(0, 5), cu.cell(0, 7), cu.cell(1, 6)]);
+        assert_eq!(cu.cell(0, 7).orthogonally_adjacent_cells(), vec![cu.cell(0, 6), cu.cell(0, 8), cu.cell(1, 7)]);
+        assert_eq!(cu.cell(0, 8).orthogonally_adjacent_cells(), vec![cu.cell(0, 7), cu.cell(1, 8)]);
+        assert_eq!(cu.cell(1, 0).orthogonally_adjacent_cells(), vec![cu.cell(0, 0), cu.cell(1, 1), cu.cell(2, 0)]);
         assert_eq!(
             cu.cell(4, 4).orthogonally_adjacent_cells(),
             vec![cu.cell(3, 4), cu.cell(4, 3), cu.cell(4, 5), cu.cell(5, 4)]
         );
-        assert_eq!(
-            cu.cell(8, 8).orthogonally_adjacent_cells(),
-            vec![cu.cell(7, 8), cu.cell(8, 7)]
-        );
+        assert_eq!(cu.cell(8, 8).orthogonally_adjacent_cells(), vec![cu.cell(7, 8), cu.cell(8, 7)]);
     }
 
     #[test]
     fn test_diagonal_cells() {
         let cu = crate::cell_utility::CellUtility::new(9);
-        assert_eq!(
-            cu.cell(0, 0).diagonally_adjacent_cells(),
-            vec![cu.cell(1, 1)]
-        );
-        assert_eq!(
-            cu.cell(0, 1).diagonally_adjacent_cells(),
-            vec![cu.cell(1, 0), cu.cell(1, 2)]
-        );
-        assert_eq!(
-            cu.cell(0, 2).diagonally_adjacent_cells(),
-            vec![cu.cell(1, 1), cu.cell(1, 3)]
-        );
-        assert_eq!(
-            cu.cell(0, 3).diagonally_adjacent_cells(),
-            vec![cu.cell(1, 2), cu.cell(1, 4)]
-        );
-        assert_eq!(
-            cu.cell(0, 4).diagonally_adjacent_cells(),
-            vec![cu.cell(1, 3), cu.cell(1, 5)]
-        );
-        assert_eq!(
-            cu.cell(0, 5).diagonally_adjacent_cells(),
-            vec![cu.cell(1, 4), cu.cell(1, 6)]
-        );
-        assert_eq!(
-            cu.cell(0, 6).diagonally_adjacent_cells(),
-            vec![cu.cell(1, 5), cu.cell(1, 7)]
-        );
-        assert_eq!(
-            cu.cell(0, 7).diagonally_adjacent_cells(),
-            vec![cu.cell(1, 6), cu.cell(1, 8)]
-        );
-        assert_eq!(
-            cu.cell(0, 8).diagonally_adjacent_cells(),
-            vec![cu.cell(1, 7)]
-        );
-        assert_eq!(
-            cu.cell(1, 0).diagonally_adjacent_cells(),
-            vec![cu.cell(0, 1), cu.cell(2, 1)]
-        );
+        assert_eq!(cu.cell(0, 0).diagonally_adjacent_cells(), vec![cu.cell(1, 1)]);
+        assert_eq!(cu.cell(0, 1).diagonally_adjacent_cells(), vec![cu.cell(1, 0), cu.cell(1, 2)]);
+        assert_eq!(cu.cell(0, 2).diagonally_adjacent_cells(), vec![cu.cell(1, 1), cu.cell(1, 3)]);
+        assert_eq!(cu.cell(0, 3).diagonally_adjacent_cells(), vec![cu.cell(1, 2), cu.cell(1, 4)]);
+        assert_eq!(cu.cell(0, 4).diagonally_adjacent_cells(), vec![cu.cell(1, 3), cu.cell(1, 5)]);
+        assert_eq!(cu.cell(0, 5).diagonally_adjacent_cells(), vec![cu.cell(1, 4), cu.cell(1, 6)]);
+        assert_eq!(cu.cell(0, 6).diagonally_adjacent_cells(), vec![cu.cell(1, 5), cu.cell(1, 7)]);
+        assert_eq!(cu.cell(0, 7).diagonally_adjacent_cells(), vec![cu.cell(1, 6), cu.cell(1, 8)]);
+        assert_eq!(cu.cell(0, 8).diagonally_adjacent_cells(), vec![cu.cell(1, 7)]);
+        assert_eq!(cu.cell(1, 0).diagonally_adjacent_cells(), vec![cu.cell(0, 1), cu.cell(2, 1)]);
         assert_eq!(
             cu.cell(4, 4).diagonally_adjacent_cells(),
             vec![cu.cell(3, 3), cu.cell(3, 5), cu.cell(5, 3), cu.cell(5, 5)]
         );
-        assert_eq!(
-            cu.cell(8, 8).diagonally_adjacent_cells(),
-            vec![cu.cell(7, 7)]
-        );
+        assert_eq!(cu.cell(8, 8).diagonally_adjacent_cells(), vec![cu.cell(7, 7)]);
     }
 
     #[test]
     fn test_adjacent_cells() {
         let cu = crate::cell_utility::CellUtility::new(9);
-        assert_eq!(
-            cu.cell(0, 0).adjacent_cells(),
-            vec![cu.cell(0, 1), cu.cell(1, 0), cu.cell(1, 1),]
-        );
+        assert_eq!(cu.cell(0, 0).adjacent_cells(), vec![cu.cell(0, 1), cu.cell(1, 0), cu.cell(1, 1),]);
         assert_eq!(
             cu.cell(0, 1).adjacent_cells(),
-            vec![
-                cu.cell(0, 0),
-                cu.cell(0, 2),
-                cu.cell(1, 0),
-                cu.cell(1, 1),
-                cu.cell(1, 2),
-            ]
+            vec![cu.cell(0, 0), cu.cell(0, 2), cu.cell(1, 0), cu.cell(1, 1), cu.cell(1, 2),]
         );
         assert_eq!(
             cu.cell(0, 2).adjacent_cells(),
-            vec![
-                cu.cell(0, 1),
-                cu.cell(0, 3),
-                cu.cell(1, 1),
-                cu.cell(1, 2),
-                cu.cell(1, 3),
-            ]
+            vec![cu.cell(0, 1), cu.cell(0, 3), cu.cell(1, 1), cu.cell(1, 2), cu.cell(1, 3),]
         );
         assert_eq!(
             cu.cell(0, 3).adjacent_cells(),
-            vec![
-                cu.cell(0, 2),
-                cu.cell(0, 4),
-                cu.cell(1, 2),
-                cu.cell(1, 3),
-                cu.cell(1, 4),
-            ]
+            vec![cu.cell(0, 2), cu.cell(0, 4), cu.cell(1, 2), cu.cell(1, 3), cu.cell(1, 4),]
         );
         assert_eq!(
             cu.cell(0, 4).adjacent_cells(),
-            vec![
-                cu.cell(0, 3),
-                cu.cell(0, 5),
-                cu.cell(1, 3),
-                cu.cell(1, 4),
-                cu.cell(1, 5),
-            ]
+            vec![cu.cell(0, 3), cu.cell(0, 5), cu.cell(1, 3), cu.cell(1, 4), cu.cell(1, 5),]
         );
         assert_eq!(
             cu.cell(0, 5).adjacent_cells(),
-            vec![
-                cu.cell(0, 4),
-                cu.cell(0, 6),
-                cu.cell(1, 4),
-                cu.cell(1, 5),
-                cu.cell(1, 6),
-            ]
+            vec![cu.cell(0, 4), cu.cell(0, 6), cu.cell(1, 4), cu.cell(1, 5), cu.cell(1, 6),]
         );
         assert_eq!(
             cu.cell(0, 6).adjacent_cells(),
-            vec![
-                cu.cell(0, 5),
-                cu.cell(0, 7),
-                cu.cell(1, 5),
-                cu.cell(1, 6),
-                cu.cell(1, 7),
-            ]
+            vec![cu.cell(0, 5), cu.cell(0, 7), cu.cell(1, 5), cu.cell(1, 6), cu.cell(1, 7),]
         );
         assert_eq!(
             cu.cell(0, 7).adjacent_cells(),
-            vec![
-                cu.cell(0, 6),
-                cu.cell(0, 8),
-                cu.cell(1, 6),
-                cu.cell(1, 7),
-                cu.cell(1, 8),
-            ]
+            vec![cu.cell(0, 6), cu.cell(0, 8), cu.cell(1, 6), cu.cell(1, 7), cu.cell(1, 8),]
         );
-        assert_eq!(
-            cu.cell(0, 8).adjacent_cells(),
-            vec![cu.cell(0, 7), cu.cell(1, 7), cu.cell(1, 8),]
-        );
+        assert_eq!(cu.cell(0, 8).adjacent_cells(), vec![cu.cell(0, 7), cu.cell(1, 7), cu.cell(1, 8),]);
         assert_eq!(
             cu.cell(1, 0).adjacent_cells(),
-            vec![
-                cu.cell(0, 0),
-                cu.cell(0, 1),
-                cu.cell(1, 1),
-                cu.cell(2, 0),
-                cu.cell(2, 1),
-            ]
+            vec![cu.cell(0, 0), cu.cell(0, 1), cu.cell(1, 1), cu.cell(2, 0), cu.cell(2, 1),]
         );
         assert_eq!(
             cu.cell(4, 4).adjacent_cells(),
@@ -669,9 +544,6 @@ mod test {
                 cu.cell(5, 5),
             ]
         );
-        assert_eq!(
-            cu.cell(8, 8).adjacent_cells(),
-            vec![cu.cell(7, 7), cu.cell(7, 8), cu.cell(8, 7),]
-        );
+        assert_eq!(cu.cell(8, 8).adjacent_cells(), vec![cu.cell(7, 7), cu.cell(7, 8), cu.cell(8, 7),]);
     }
 }

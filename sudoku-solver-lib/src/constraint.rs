@@ -38,7 +38,7 @@ pub trait Constraint: std::any::Any + core::fmt::Debug {
     /// - [`LogicalStepResult::Changed`] if the board is changed.
     /// - [`LogicalStepResult::Invalid`] if this constraint has made the solve impossible.
     /// - All other values are treated as [`LogicalStepResult::None`].
-    fn init_board(&self, board: &mut Board) -> LogicalStepResult {
+    fn init_board(&mut self, board: &mut Board) -> LogicalStepResult {
         let _ = board;
         LogicalStepResult::None
     }

@@ -21,11 +21,7 @@ impl LogicalStep for NakedSingle {
             if mask.is_single() {
                 let value = mask.value();
                 if board.set_solved(cell, value) {
-                    let desc = if generate_description {
-                        Some(format!("{}={}", cell, value).into())
-                    } else {
-                        None
-                    };
+                    let desc = if generate_description { Some(format!("{}={}", cell, value).into()) } else { None };
                     return LogicalStepResult::Changed(desc);
                 } else {
                     let desc = if generate_description {
@@ -36,11 +32,7 @@ impl LogicalStep for NakedSingle {
                     return LogicalStepResult::Invalid(desc);
                 }
             } else if mask.is_empty() {
-                let desc = if generate_description {
-                    Some(format!("{} has no candidates", cell).into())
-                } else {
-                    None
-                };
+                let desc = if generate_description { Some(format!("{} has no candidates", cell).into()) } else { None };
                 return LogicalStepResult::Invalid(desc);
             }
         }

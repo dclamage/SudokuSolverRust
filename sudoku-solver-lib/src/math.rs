@@ -105,7 +105,59 @@ pub fn get_weak_links_for_nonrepeat(
     group
         .tuple_combinations()
         .flat_map(move |(cell1, cell2)| {
-            (1..=9).map(move |value| (cell1.candidate(value), cell2.candidate(value)))
+            (1..=cell1.size()).map(move |value| (cell1.candidate(value), cell2.candidate(value)))
         })
         .collect()
+}
+
+/// Utility function to generate the weak links for a group of cells where the value
+/// must be the same for every cell the group.
+pub fn get_weak_links_for_clone(
+    group: impl Iterator<Item = CellIndex> + Clone,
+) -> Vec<(CandidateIndex, CandidateIndex)> {
+    group
+        .tuple_combinations()
+        .flat_map(move |(cell1, cell2)| {
+            (1..=cell1.size()).flat_map(move |value1| {
+                (1..=cell1.size())
+                    .filter(move |value2| value1 != *value2)
+                    .map(move |value2| (cell1.candidate(value1), cell2.candidate(value2)))
+            })
+        })
+        .collect()
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_weak_links_for_nonrepeat() {
+        let cu = CellUtility::new(6);
+        let cell0 = cu.cell(0, 0);
+        let cell1 = cu.cell(0, 1);
+        let cell2 = cu.cell(0, 2);
+        let links = get_weak_links_for_nonrepeat(vec![cell0, cell1, cell2].into_iter());
+        assert_eq!(links.len(), 18);
+        for val in 1..=6 {
+            assert!(links.contains(&(cell0.candidate(val), cell1.candidate(val))));
+            assert!(links.contains(&(cell0.candidate(val), cell2.candidate(val))));
+            assert!(links.contains(&(cell1.candidate(val), cell2.candidate(val))));
+        }
+    }
+
+    #[test]
+    fn test_weak_links_for_clone() {
+        let cu = CellUtility::new(6);
+        let cell0 = cu.cell(0, 0);
+        let cell1 = cu.cell(0, 1);
+        let cell2 = cu.cell(0, 2);
+        let links = get_weak_links_for_clone(vec![cell0, cell1, cell2].into_iter());
+        assert_eq!(links.len(), 6 * 3 * 5);
+        for val in 1..=6 {
+            assert!(!links.contains(&(cell0.candidate(val), cell1.candidate(val))));
+            assert!(!links.contains(&(cell0.candidate(val), cell2.candidate(val))));
+            assert!(!links.contains(&(cell1.candidate(val), cell2.candidate(val))));
+        }
+    }
 }

@@ -23,10 +23,7 @@ impl CandidateLinks {
     /// board size.
     pub fn new(size: usize) -> Self {
         let num_candidates = size * size * size;
-        Self {
-            links: bitvec!(0; num_candidates),
-            size,
-        }
+        Self { links: bitvec!(0; num_candidates), size }
     }
 
     /// Returns true if the candidate is linked
@@ -66,13 +63,7 @@ impl CandidateLinks {
     pub fn links(&self) -> impl Iterator<Item = CandidateIndex> + '_ {
         let cu = CellUtility::new(self.size);
 
-        self.links.iter().enumerate().filter_map(move |(i, b)| {
-            if *b {
-                Some(cu.candidate_index(i))
-            } else {
-                None
-            }
-        })
+        self.links.iter().enumerate().filter_map(move |(i, b)| if *b { Some(cu.candidate_index(i)) } else { None })
     }
 }
 

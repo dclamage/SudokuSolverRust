@@ -33,9 +33,7 @@ pub struct VecSolutionReceiver {
 impl VecSolutionReceiver {
     /// Creates a new [`VecSolutionReceiver`].
     pub fn new() -> Self {
-        Self {
-            solutions: Vec::new(),
-        }
+        Self { solutions: Vec::new() }
     }
 
     /// Returns the solutions.

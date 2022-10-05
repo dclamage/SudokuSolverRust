@@ -13,12 +13,7 @@ pub(crate) struct Message {
 impl Message {
     #[allow(dead_code)]
     pub fn new(nonce: i32, command: &str, data_type: &str, data: &str) -> Self {
-        Self {
-            nonce,
-            command: command.to_owned(),
-            data_type: data_type.to_owned(),
-            data: data.to_owned(),
-        }
+        Self { nonce, command: command.to_owned(), data_type: data_type.to_owned(), data: data.to_owned() }
     }
 
     pub fn from_json(json: &str) -> Result<Self, serde_json::Error> {

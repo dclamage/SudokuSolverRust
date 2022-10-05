@@ -28,10 +28,7 @@ impl House {
         let mut cells = cells.to_vec();
         cells.sort();
 
-        House {
-            name: name.to_string(),
-            cells,
-        }
+        House { name: name.to_string(), cells }
     }
 
     /// Get the name of the house.

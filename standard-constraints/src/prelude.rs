@@ -1,3 +1,4 @@
+pub use crate::arrow_sum_constraint::*;
 pub use crate::chess_constraint::*;
 pub use crate::fpuzzles_parser::prelude::*;
 pub use crate::fpuzzles_parser::*;

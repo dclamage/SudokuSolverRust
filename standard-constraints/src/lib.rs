@@ -1,3 +1,4 @@
+pub mod arrow_sum_constraint;
 pub mod chess_constraint;
 pub mod fpuzzles_parser;
 pub mod message_handler;

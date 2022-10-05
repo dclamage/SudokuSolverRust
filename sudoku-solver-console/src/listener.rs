@@ -14,10 +14,7 @@ pub async fn listen() {
 
     let clients: Clients = Arc::new(Mutex::new(HashMap::new()));
 
-    let ws_route = warp::path::end()
-        .and(warp::ws())
-        .and(with_clients(clients.clone()))
-        .and_then(handlers::ws_handler);
+    let ws_route = warp::path::end().and(warp::ws()).and(with_clients(clients.clone())).and_then(handlers::ws_handler);
 
     let routes = ws_route.with(warp::cors().allow_any_origin());
     warp::serve(routes).run(([127, 0, 0, 1], 4545)).await;

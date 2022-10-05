@@ -27,10 +27,7 @@ pub async fn client_connection(ws: WebSocket, clients: Clients) {
 
     let uuid = Uuid::new_v4().simple().to_string();
 
-    let new_client = Client {
-        client_id: uuid.clone(),
-        sender: None,
-    };
+    let new_client = Client { client_id: uuid.clone(), sender: None };
 
     clients.lock().await.insert(uuid.clone(), new_client);
 
@@ -76,9 +73,7 @@ impl SendResultForWS {
 impl SendResult for SendResultForWS {
     /// Panics if we cannot send, which will terminate the thread
     fn send_result(&mut self, result: &str) {
-        self.sender
-            .blocking_send(Ok(Message::text(result)))
-            .unwrap();
+        self.sender.blocking_send(Ok(Message::text(result))).unwrap();
     }
 }
 
@@ -91,11 +86,7 @@ struct CancellableMessage {
 
 impl CancellableMessage {
     fn new(messsage: Message) -> Self {
-        Self {
-            messsage,
-            cancel_token: Cancellation::new(),
-            completed_token: Arc::new(AtomicBool::from(false)),
-        }
+        Self { messsage, cancel_token: Cancellation::new(), completed_token: Arc::new(AtomicBool::from(false)) }
     }
 }
 
@@ -117,8 +108,7 @@ impl ThreadedHandler {
 
         let _ = std::thread::spawn({
             move || {
-                let mut message_handler =
-                    MessageHandler::new(Box::new(SendResultForWS::new(client_sender)));
+                let mut message_handler = MessageHandler::new(Box::new(SendResultForWS::new(client_sender)));
 
                 // This is the thread for handling messages from the client.
                 // We handle multiple messages before we give up
@@ -159,10 +149,7 @@ impl ThreadedHandler {
         true
     }
 
-    async fn send(
-        &mut self,
-        message: CancellableMessage,
-    ) -> Result<(), mpsc::error::SendError<CancellableMessage>> {
+    async fn send(&mut self, message: CancellableMessage) -> Result<(), mpsc::error::SendError<CancellableMessage>> {
         self.last_message_cancellable.cancel();
         self.last_message_completed = message.completed_token.clone();
         self.last_message_cancellable = message.cancel_token.clone();
@@ -170,11 +157,7 @@ impl ThreadedHandler {
     }
 
     fn close(self) {
-        let Self {
-            sender,
-            last_message_cancellable,
-            last_message_completed: _,
-        } = self;
+        let Self { sender, last_message_cancellable, last_message_completed: _ } = self;
         last_message_cancellable.cancel();
         drop(sender);
     }

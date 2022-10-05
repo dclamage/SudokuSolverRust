@@ -82,9 +82,7 @@ mod test {
             let cell_r1c1 = cu.cell(0, 0);
             let cell_r1c2 = cu.cell(0, 1);
             let candidate_1r1c2 = cu.candidate(cell_r1c2, 1);
-            (2..=8)
-                .map(|v| (cu.candidate(cell_r1c1, v), candidate_1r1c2))
-                .collect()
+            (2..=8).map(|v| (cu.candidate(cell_r1c1, v), candidate_1r1c2)).collect()
         }
     }
 

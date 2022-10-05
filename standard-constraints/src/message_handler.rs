@@ -22,10 +22,7 @@ pub struct MessageHandler {
 
 impl MessageHandler {
     pub fn new(send_result: Box<dyn SendResult>) -> Self {
-        Self {
-            send_result,
-            cancellation: Cancellation::default(),
-        }
+        Self { send_result, cancellation: Cancellation::default() }
     }
 
     fn send_result(&mut self, result: &str) {
@@ -42,11 +39,7 @@ impl MessageHandler {
         let message = match Message::from_json(message) {
             Ok(message) => message,
             Err(error) => {
-                self.send_result(
-                    InvalidResponse::new(0, &error.to_string())
-                        .to_json()
-                        .as_str(),
-                );
+                self.send_result(InvalidResponse::new(0, &error.to_string()).to_json().as_str());
                 return;
             }
         };
@@ -58,18 +51,11 @@ impl MessageHandler {
         }
 
         if message.data_type() != "fpuzzles" {
-            self.send_result(
-                InvalidResponse::new(nonce, "Invalid data type. Expected 'fpuzzles'.")
-                    .to_json()
-                    .as_str(),
-            );
+            self.send_result(InvalidResponse::new(nonce, "Invalid data type. Expected 'fpuzzles'.").to_json().as_str());
             return;
         }
 
-        let only_givens = matches!(
-            message.command(),
-            "solve" | "truecandidates" | "check" | "count"
-        );
+        let only_givens = matches!(message.command(), "solve" | "truecandidates" | "check" | "count");
 
         let board = match FPuzzlesBoard::from_lzstring_json(message.data()) {
             Ok(board) => board,
@@ -95,11 +81,8 @@ impl MessageHandler {
             "count" => self.count(nonce, solver, 0),
             "solvepath" => self.solve_path(nonce, solver),
             "step" => self.step(nonce, solver),
-            _ => InvalidResponse::new(
-                message.nonce(),
-                format!("Unknown command: {}", message.command()).as_str(),
-            )
-            .to_json(),
+            _ => InvalidResponse::new(message.nonce(), format!("Unknown command: {}", message.command()).as_str())
+                .to_json(),
         };
 
         self.send_result(result.as_str());
@@ -168,11 +151,7 @@ impl MessageHandler {
         }
 
         let logical_cells: Vec<ValueMask> = if let Some(logical_solver) = logical_solver.as_ref() {
-            logical_solver
-                .board()
-                .all_cell_masks()
-                .map(|(_, mask)| mask)
-                .collect()
+            logical_solver.board().all_cell_masks().map(|(_, mask)| mask).collect()
         } else {
             real_cells.clone()
         };
@@ -188,8 +167,7 @@ impl MessageHandler {
                     solutions_per_candidate[solution_index] = -1;
                 } else if have_value_real {
                     if let Some(candidate_counts) = candidate_counts.as_ref() {
-                        solutions_per_candidate[solution_index] =
-                            candidate_counts[solution_index] as i32;
+                        solutions_per_candidate[solution_index] = candidate_counts[solution_index] as i32;
                     } else {
                         solutions_per_candidate[solution_index] = 1;
                     }
@@ -203,15 +181,10 @@ impl MessageHandler {
     fn find_solution(&mut self, nonce: i32, solver: Solver) -> String {
         let result = solver.find_random_solution();
         match result {
-            SingleSolutionResult::None => {
-                InvalidResponse::new(nonce, "No solutions found.").to_json()
-            }
+            SingleSolutionResult::None => InvalidResponse::new(nonce, "No solutions found.").to_json(),
             SingleSolutionResult::Error(error) => InvalidResponse::new(nonce, &error).to_json(),
             SingleSolutionResult::Solved(board) => {
-                let board: Vec<i32> = board
-                    .all_cell_masks()
-                    .map(|(_, mask)| mask.value() as i32)
-                    .collect();
+                let board: Vec<i32> = board.all_cell_masks().map(|(_, mask)| mask.value() as i32).collect();
                 SolvedResponse::new(nonce, &board).to_json()
             }
         }
@@ -226,9 +199,7 @@ impl MessageHandler {
             solver.find_solution_count(0, Some(&mut receiver), cancellation)
         };
         match result {
-            SolutionCountResult::None => {
-                InvalidResponse::new(nonce, "No solutions found.").to_json()
-            }
+            SolutionCountResult::None => InvalidResponse::new(nonce, "No solutions found.").to_json(),
             SolutionCountResult::Error(error) => InvalidResponse::new(nonce, &error).to_json(),
             SolutionCountResult::ExactCount(count) | SolutionCountResult::AtLeastCount(count) => {
                 CountResponse::new(nonce, count as u64, false).to_json()
@@ -242,15 +213,9 @@ impl MessageHandler {
             .all_cell_masks()
             .map(|(_, mask)| {
                 if mask.is_solved() {
-                    LogicalCell {
-                        value: mask.value() as i32,
-                        candidates: Vec::new(),
-                    }
+                    LogicalCell { value: mask.value() as i32, candidates: Vec::new() }
                 } else {
-                    LogicalCell {
-                        value: 0,
-                        candidates: mask.into_iter().map(|v| v as i32).collect(),
-                    }
+                    LogicalCell { value: 0, candidates: mask.into_iter().map(|v| v as i32).collect() }
                 }
             })
             .collect()
@@ -261,9 +226,7 @@ impl MessageHandler {
         let cells: Vec<LogicalCell> = Self::logical_cells(&solver);
 
         match result {
-            LogicalSolveResult::None => {
-                LogicalResponse::new(nonce, &cells, "No logical steps found.", true).to_json()
-            }
+            LogicalSolveResult::None => LogicalResponse::new(nonce, &cells, "No logical steps found.", true).to_json(),
             LogicalSolveResult::Changed(desc) | LogicalSolveResult::Solved(desc) => {
                 LogicalResponse::new(nonce, &cells, desc.to_string().as_str(), true).to_json()
             }
@@ -285,13 +248,7 @@ impl MessageHandler {
             let new_center_marks = solver
                 .board()
                 .all_cell_masks()
-                .map(|(_, mask)| {
-                    if mask.is_solved() {
-                        String::new()
-                    } else {
-                        mask.into_iter().join(",")
-                    }
-                })
+                .map(|(_, mask)| if mask.is_solved() { String::new() } else { mask.into_iter().join(",") })
                 .join(";");
             if original_center_marks != new_center_marks {
                 return LogicalResponse::new(nonce, &cells, "Initial candidates.", false).to_json();
@@ -301,17 +258,14 @@ impl MessageHandler {
         let result = solver.run_single_logical_step();
         let cells: Vec<LogicalCell> = Self::logical_cells(&solver);
         match result {
-            LogicalStepResult::None => {
-                LogicalResponse::new(nonce, &cells, "No logical steps found.", true).to_json()
-            }
+            LogicalStepResult::None => LogicalResponse::new(nonce, &cells, "No logical steps found.", true).to_json(),
             LogicalStepResult::Changed(desc) => {
                 let desc = desc.unwrap_or_else(|| "ERROR: No logical step description!".into());
                 LogicalResponse::new(nonce, &cells, desc.to_string().as_str(), true).to_json()
             }
             LogicalStepResult::Invalid(desc) => {
                 let mut desc_list = LogicalStepDescList::new();
-                desc_list
-                    .push(desc.unwrap_or_else(|| "ERROR: No logical step description!".into()));
+                desc_list.push(desc.unwrap_or_else(|| "ERROR: No logical step description!".into()));
                 desc_list.push("Board is invalid!".into());
                 LogicalResponse::new(nonce, &cells, desc_list.to_string().as_str(), false).to_json()
             }
@@ -343,10 +297,8 @@ impl<'a> ReportCountSolutionReceiver<'a> {
     }
 
     fn send_progress(&mut self) {
-        let in_progress_response =
-            CountResponse::new(self.nonce, self.count as u64, true).to_json();
-        self.message_handler
-            .send_result(in_progress_response.as_str());
+        let in_progress_response = CountResponse::new(self.nonce, self.count as u64, true).to_json();
+        self.message_handler.send_result(in_progress_response.as_str());
     }
 }
 
@@ -416,16 +368,9 @@ mod test {
             assert_eq!(result.len(), 1);
 
             let response = SolvedResponse::from_json(result[0].as_str()).unwrap();
-            assert_eq!(
-                response.nonce, 123,
-                "Nonce should be 123 for solve message, but was {}",
-                response.nonce
-            );
+            assert_eq!(response.nonce, 123, "Nonce should be 123 for solve message, but was {}", response.nonce);
 
-            let expected_solution: Vec<i32> = expected_solution
-                .chars()
-                .map(|c| c as i32 - '0' as i32)
-                .collect();
+            let expected_solution: Vec<i32> = expected_solution.chars().map(|c| c as i32 - '0' as i32).collect();
             assert_eq!(
                 response.solution, *expected_solution,
                 "Solution should be {:?} for solve message, but was {:?}",
@@ -448,20 +393,9 @@ mod test {
         assert!(result.len() > 0);
 
         let response = CountResponse::from_json(result.last().unwrap().as_str()).unwrap();
-        assert_eq!(
-            response.nonce, 123,
-            "Nonce should be 123 for solve message, but was {}",
-            response.nonce
-        );
-        assert_eq!(
-            response.in_progress, false,
-            "Count should be finished, but was in progress"
-        );
-        assert_eq!(
-            response.count, 8448,
-            "Count should be 8448 for solve message, but was {}",
-            response.count
-        );
+        assert_eq!(response.nonce, 123, "Nonce should be 123 for solve message, but was {}", response.nonce);
+        assert_eq!(response.in_progress, false, "Count should be finished, but was in progress");
+        assert_eq!(response.count, 8448, "Count should be 8448 for solve message, but was {}", response.count);
     }
 
     #[test]
@@ -478,11 +412,7 @@ mod test {
         assert!(result.len() == 1);
 
         let response = TrueCandidatesResponse::from_json(result.last().unwrap().as_str()).unwrap();
-        assert_eq!(
-            response.nonce, 123,
-            "Nonce should be 123 for solve message, but was {}",
-            response.nonce
-        );
+        assert_eq!(response.nonce, 123, "Nonce should be 123 for solve message, but was {}", response.nonce);
         assert_eq!(response.solutions_per_candidate.len(), 9 * 9 * 9);
 
         let cu = CellUtility::new(9);

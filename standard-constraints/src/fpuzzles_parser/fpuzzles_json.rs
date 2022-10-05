@@ -96,10 +96,7 @@ impl FPuzzlesBoard {
 
         let decompressed_str = String::from_utf16(&decompressed);
         if let Err(error) = decompressed_str {
-            return Err(format!(
-                "Failed to convert decompressed string to UTF-16: {}",
-                error
-            ));
+            return Err(format!("Failed to convert decompressed string to UTF-16: {}", error));
         }
         let decompressed_str = decompressed_str.unwrap();
 
@@ -125,16 +122,9 @@ pub struct FPuzzlesGridEntry {
     pub given: bool,
     #[serde(rename = "centerPencilMarks", default = "Vec::default")]
     pub center_pencil_marks: Vec<i32>,
-    #[serde(
-        rename = "givenPencilMarks",
-        default = "Vec::default",
-        deserialize_with = "deserialize_null_default"
-    )]
+    #[serde(rename = "givenPencilMarks", default = "Vec::default", deserialize_with = "deserialize_null_default")]
     pub given_pencil_marks: Vec<i32>,
-    #[serde(
-        default = "default_neg1",
-        deserialize_with = "deserialize_null_as_neg1"
-    )]
+    #[serde(default = "default_neg1", deserialize_with = "deserialize_null_as_neg1")]
     pub region: i32,
 }
 
@@ -251,12 +241,7 @@ mod test {
     fn test_no_decompress_errors() {
         for (i, data) in FPUZZLES_TEST_DATA.iter().enumerate() {
             let board = FPuzzlesBoard::from_lzstring_json(data.0);
-            assert!(
-                board.is_ok(),
-                "Failed to parse board {}: {}",
-                i,
-                board.unwrap_err()
-            );
+            assert!(board.is_ok(), "Failed to parse board {}: {}", i, board.unwrap_err());
         }
     }
 

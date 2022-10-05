@@ -12,20 +12,12 @@ pub struct ChessConstraint {
 impl ChessConstraint {
     /// Creates a new [`ChessConstraint`] with any arbitrary offsets.
     pub fn new(specific_name: &str, offsets: Vec<(isize, isize)>) -> Self {
-        Self {
-            specific_name: specific_name.to_owned(),
-            offsets,
-        }
+        Self { specific_name: specific_name.to_owned(), offsets }
     }
 
     /// Creates a new [`ChessConstraint`] with the symmetric offsets.
     pub fn from_symmetric_offset(specific_name: &str, offset: (isize, isize)) -> Self {
-        let mut offsets = vec![
-            offset,
-            (-offset.0, offset.1),
-            (offset.0, -offset.1),
-            (-offset.0, -offset.1),
-        ];
+        let mut offsets = vec![offset, (-offset.0, offset.1), (offset.0, -offset.1), (-offset.0, -offset.1)];
         if offset.0.abs() != offset.1.abs() {
             offsets.reserve(4);
             offsets.push((offset.1, offset.0));
@@ -106,9 +98,7 @@ mod test {
         let solver = SolverBuilder::default()
             .with_constraint(Arc::new(ChessConstraint::anti_king()))
             .with_constraint(Arc::new(ChessConstraint::anti_knight()))
-            .with_givens_string(
-                "123456789000000000000000000000000000000000000000000000000000000000000000000000000",
-            )
+            .with_givens_string("123456789000000000000000000000000000000000000000000000000000000000000000000000000")
             .build()
             .unwrap();
 

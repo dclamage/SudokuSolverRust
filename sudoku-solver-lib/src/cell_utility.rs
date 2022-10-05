@@ -184,16 +184,9 @@ impl CellUtility {
         let size = self.size;
         let mut result = Vec::new();
 
-        for cell_group in cell_string
-            .split(';')
-            .map(|s| s.trim())
-            .filter(|s| !s.is_empty())
-        {
+        for cell_group in cell_string.split(';').map(|s| s.trim()).filter(|s| !s.is_empty()) {
             if !cell_group.is_ascii() {
-                return Err(format!(
-                    "Invalid cell group (invalid characters): {}",
-                    cell_group
-                ));
+                return Err(format!("Invalid cell group (invalid characters): {}", cell_group));
             }
 
             let err_msg = format!("Invalid cell group: {}", cell_group);
@@ -225,9 +218,7 @@ impl CellUtility {
                 let cur_char = cell_group[i];
                 if cur_char == b'r' {
                     if adding_rows
-                        || self
-                            .add_range(&mut cols, cur_val_start, cur_val_end)
-                            .is_err()
+                        || self.add_range(&mut cols, cur_val_start, cur_val_end).is_err()
                         || self.add_cells(&mut cells, &rows, &cols).is_err()
                     {
                         return Err(err_msg);
@@ -240,9 +231,7 @@ impl CellUtility {
                     cur_val_end = 0;
                 } else if cur_char == b'c' {
                     if !adding_rows
-                        || self
-                            .add_range(&mut rows, cur_val_start, cur_val_end)
-                            .is_err()
+                        || self.add_range(&mut rows, cur_val_start, cur_val_end).is_err()
                         || self.add_cells(&mut cells, &rows, &cols).is_err()
                     {
                         return Err(err_msg);
@@ -253,9 +242,7 @@ impl CellUtility {
                     cur_val_end = 0;
                 } else if cur_char == b'd' {
                     if adding_rows
-                        || self
-                            .add_range(&mut cols, cur_val_start, cur_val_end)
-                            .is_err()
+                        || self.add_range(&mut cols, cur_val_start, cur_val_end).is_err()
                         || self.add_cells(&mut cells, &rows, &cols).is_err()
                     {
                         return Err(err_msg);
@@ -294,11 +281,7 @@ impl CellUtility {
                                 return Err(err_msg);
                             }
                         }
-                        if to_add.0 < 0
-                            || to_add.0 > size as isize
-                            || to_add.1 < 0
-                            || to_add.1 > size as isize
-                        {
+                        if to_add.0 < 0 || to_add.0 > size as isize || to_add.1 < 0 || to_add.1 > size as isize {
                             return Err(err_msg);
                         }
                         cells.push(self.cell(to_add.0 as usize, to_add.1 as usize));
@@ -319,11 +302,7 @@ impl CellUtility {
                     value_start = false;
                 } else if cur_char == b',' {
                     if self
-                        .add_range(
-                            if adding_rows { &mut rows } else { &mut cols },
-                            cur_val_start,
-                            cur_val_end,
-                        )
+                        .add_range(if adding_rows { &mut rows } else { &mut cols }, cur_val_start, cur_val_end)
                         .is_err()
                     {
                         return Err(err_msg);
@@ -340,9 +319,7 @@ impl CellUtility {
 
             if !last_added_directions
                 && (adding_rows
-                    || self
-                        .add_range(&mut cols, cur_val_start, cur_val_end)
-                        .is_err()
+                    || self.add_range(&mut cols, cur_val_start, cur_val_end).is_err()
                     || self.add_cells(&mut cells, &rows, &cols).is_err()
                     || cells.is_empty())
             {
@@ -377,12 +354,7 @@ impl CellUtility {
     }
 
     // Used by parse_cell_groups
-    fn add_cells(
-        self,
-        list: &mut Vec<CellIndex>,
-        rows: &[usize],
-        cols: &[usize],
-    ) -> Result<(), ()> {
+    fn add_cells(self, list: &mut Vec<CellIndex>, rows: &[usize], cols: &[usize]) -> Result<(), ()> {
         let size = self.size;
 
         for &r in rows {
@@ -422,19 +394,13 @@ impl CellUtility {
     /// assert!(pairs.contains(&(cand8r1c1, cand8r1c3)));
     /// assert!(pairs.contains(&(cand8r1c2, cand8r1c3)));
     /// ```
-    pub fn candidate_pairs(
-        self,
-        cells: &[CellIndex],
-    ) -> impl Iterator<Item = (CandidateIndex, CandidateIndex)> + '_ {
+    pub fn candidate_pairs(self, cells: &[CellIndex]) -> impl Iterator<Item = (CandidateIndex, CandidateIndex)> + '_ {
         (1..=self.size).flat_map(move |val| {
-            cells.iter().copied().tuple_combinations::<(_, _)>().map(
-                move |(candidate0, candidate1)| {
-                    (
-                        self.candidate(candidate0, val),
-                        self.candidate(candidate1, val),
-                    )
-                },
-            )
+            cells
+                .iter()
+                .copied()
+                .tuple_combinations::<(_, _)>()
+                .map(move |(candidate0, candidate1)| (self.candidate(candidate0, val), self.candidate(candidate1, val)))
         })
     }
 
@@ -482,11 +448,7 @@ impl CellUtility {
             return format!(
                 "r{}c{}",
                 cells[0].0 + 1,
-                cells
-                    .iter()
-                    .map(|cell| cell.1 + 1)
-                    .sorted()
-                    .join(cell_separator)
+                cells.iter().map(|cell| cell.1 + 1).sorted().join(cell_separator)
             );
         }
 
@@ -495,20 +457,14 @@ impl CellUtility {
         if cells.iter().all(|cell| cell.1 == first_col) {
             return format!(
                 "r{}c{}",
-                cells
-                    .iter()
-                    .map(|cell| cell.0 + 1)
-                    .sorted()
-                    .join(cell_separator),
+                cells.iter().map(|cell| cell.0 + 1).sorted().join(cell_separator),
                 cells[0].1 + 1
             );
         }
 
         // More complex case that spans rows and cols
-        let grouped_by_row =
-            self.compact_name_grouped_by_row(&cells, cell_separator, group_separator);
-        let grouped_by_col =
-            self.compact_name_grouped_by_col(&cells, cell_separator, group_separator);
+        let grouped_by_row = self.compact_name_grouped_by_row(&cells, cell_separator, group_separator);
+        let grouped_by_col = self.compact_name_grouped_by_col(&cells, cell_separator, group_separator);
 
         if grouped_by_row.len() < grouped_by_col.len() {
             grouped_by_row
@@ -609,30 +565,12 @@ mod test {
         let cu10 = CellUtility::new(10);
 
         assert_eq!(cu.parse_cell_groups(""), Result::Ok(vec![]));
-        assert_eq!(
-            cu.parse_cell_groups("r1c1"),
-            Result::Ok(vec![vec![cu.cell(0, 0)]])
-        );
-        assert_eq!(
-            cu.parse_cell_groups("R1C1"),
-            Result::Ok(vec![vec![cu.cell(0, 0)]])
-        );
-        assert_eq!(
-            cu.parse_cell_groups("r2c1"),
-            Result::Ok(vec![vec![cu.cell(1, 0)]])
-        );
-        assert_eq!(
-            cu4.parse_cell_groups("r2c1"),
-            Result::Ok(vec![vec![cu4.cell(1, 0)]])
-        );
-        assert_eq!(
-            cu.parse_cell_groups("r2c2"),
-            Result::Ok(vec![vec![cu.cell(1, 1)]])
-        );
-        assert_eq!(
-            cu10.parse_cell_groups("r10c10"),
-            Result::Ok(vec![vec![cu10.cell(9, 9)]])
-        );
+        assert_eq!(cu.parse_cell_groups("r1c1"), Result::Ok(vec![vec![cu.cell(0, 0)]]));
+        assert_eq!(cu.parse_cell_groups("R1C1"), Result::Ok(vec![vec![cu.cell(0, 0)]]));
+        assert_eq!(cu.parse_cell_groups("r2c1"), Result::Ok(vec![vec![cu.cell(1, 0)]]));
+        assert_eq!(cu4.parse_cell_groups("r2c1"), Result::Ok(vec![vec![cu4.cell(1, 0)]]));
+        assert_eq!(cu.parse_cell_groups("r2c2"), Result::Ok(vec![vec![cu.cell(1, 1)]]));
+        assert_eq!(cu10.parse_cell_groups("r10c10"), Result::Ok(vec![vec![cu10.cell(9, 9)]]));
         assert_eq!(
             cu.parse_cell_groups("r1-3c1-2"),
             Result::Ok(vec![vec![
@@ -644,32 +582,16 @@ mod test {
                 cu.cell(2, 1)
             ]])
         );
-        assert_eq!(
-            cu.parse_cell_groups("r1c1r2c2"),
-            Result::Ok(vec![vec![cu.cell(0, 0), cu.cell(1, 1)]])
-        );
+        assert_eq!(cu.parse_cell_groups("r1c1r2c2"), Result::Ok(vec![vec![cu.cell(0, 0), cu.cell(1, 1)]]));
         assert_eq!(
             cu.parse_cell_groups("r1c1d222"),
-            Result::Ok(vec![vec![
-                cu.cell(0, 0),
-                cu.cell(1, 0),
-                cu.cell(2, 0),
-                cu.cell(3, 0)
-            ]])
+            Result::Ok(vec![vec![cu.cell(0, 0), cu.cell(1, 0), cu.cell(2, 0), cu.cell(3, 0)]])
         );
         assert_eq!(
             cu.parse_cell_groups("r1,3c1-2"),
-            Result::Ok(vec![vec![
-                cu.cell(0, 0),
-                cu.cell(0, 1),
-                cu.cell(2, 0),
-                cu.cell(2, 1)
-            ]])
+            Result::Ok(vec![vec![cu.cell(0, 0), cu.cell(0, 1), cu.cell(2, 0), cu.cell(2, 1)]])
         );
-        assert_eq!(
-            cu.parse_cell_groups("r1c1;r2c2"),
-            Result::Ok(vec![vec![cu.cell(0, 0)], vec![cu.cell(1, 1)]])
-        );
+        assert_eq!(cu.parse_cell_groups("r1c1;r2c2"), Result::Ok(vec![vec![cu.cell(0, 0)], vec![cu.cell(1, 1)]]));
         assert!(cu.parse_cell_groups("x").is_err());
         assert!(cu.parse_cell_groups("x1c1").is_err());
         assert!(cu.parse_cell_groups("r0c1").is_err());
@@ -685,46 +607,19 @@ mod test {
         assert_eq!(cu.cell_index(80).to_string(), "r9c9");
         assert_eq!(cu.compact_name(&[]), "");
         assert_eq!(cu.compact_name(&[cu.cell(0, 0)]), "r1c1");
+        assert_eq!(cu.compact_name(&[cu.cell(0, 0), cu.cell(0, 1), cu.cell(0, 2)]), "r1c123");
+        assert_eq!(cu.compact_name(&[cu.cell(0, 0), cu.cell(1, 0), cu.cell(2, 0)]), "r123c1");
         assert_eq!(
-            cu.compact_name(&[cu.cell(0, 0), cu.cell(0, 1), cu.cell(0, 2)]),
-            "r1c123"
-        );
-        assert_eq!(
-            cu.compact_name(&[cu.cell(0, 0), cu.cell(1, 0), cu.cell(2, 0)]),
-            "r123c1"
-        );
-        assert_eq!(
-            cu.compact_name(&[
-                cu.cell(0, 0),
-                cu.cell(0, 1),
-                cu.cell(0, 2),
-                cu.cell(1, 0),
-                cu.cell(2, 0)
-            ]),
+            cu.compact_name(&[cu.cell(0, 0), cu.cell(0, 1), cu.cell(0, 2), cu.cell(1, 0), cu.cell(2, 0)]),
             "r123c1,r1c23"
         );
+        assert_eq!(cu.compact_name(&[cu.cell(0, 0), cu.cell(1, 1), cu.cell(2, 2)]), "r1c1,r2c2,r3c3");
         assert_eq!(
-            cu.compact_name(&[cu.cell(0, 0), cu.cell(1, 1), cu.cell(2, 2)]),
-            "r1c1,r2c2,r3c3"
-        );
-        assert_eq!(
-            cu.compact_name(&[
-                cu.cell(0, 0),
-                cu.cell(1, 1),
-                cu.cell(2, 2),
-                cu.cell(2, 3),
-                cu.cell(2, 4)
-            ]),
+            cu.compact_name(&[cu.cell(0, 0), cu.cell(1, 1), cu.cell(2, 2), cu.cell(2, 3), cu.cell(2, 4)]),
             "r1c1,r2c2,r3c345"
         );
         assert_eq!(
-            cu.compact_name(&[
-                cu.cell(0, 0),
-                cu.cell(1, 1),
-                cu.cell(2, 2),
-                cu.cell(3, 2),
-                cu.cell(4, 2)
-            ]),
+            cu.compact_name(&[cu.cell(0, 0), cu.cell(1, 1), cu.cell(2, 2), cu.cell(3, 2), cu.cell(4, 2)]),
             "r1c1,r2c2,r345c3"
         );
     }

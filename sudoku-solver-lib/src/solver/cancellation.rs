@@ -26,9 +26,7 @@ impl Cancellation {
     /// assert_eq!(cancellation.check(), true);
     /// ```
     pub fn new() -> Self {
-        Self {
-            token: Arc::new(AtomicBool::from(false)),
-        }
+        Self { token: Arc::new(AtomicBool::from(false)) }
     }
 
     /// Check if the cancellation has been sent

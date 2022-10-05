@@ -44,10 +44,7 @@ mod test {
 
     impl RemoveCandidateConstraint {
         fn new(candidate: CandidateIndex) -> Self {
-            Self {
-                specific_name: format!("Remove {}", candidate),
-                candidate,
-            }
+            Self { specific_name: format!("Remove {}", candidate), candidate }
         }
     }
 
@@ -93,20 +90,14 @@ mod test {
         // Stepping the logic should remove just the first candidate
         let result = step_constraints.run(&mut board, true);
         assert!(result.is_changed());
-        assert_eq!(
-            result.description().unwrap().to_string(),
-            "Remove 1r1c1: 1r1c1 removed."
-        );
+        assert_eq!(result.description().unwrap().to_string(), "Remove 1r1c1: 1r1c1 removed.");
         assert!(!board.has_candidate(candidate1));
         assert!(board.has_candidate(candidate2));
 
         // Stepping the logic should remove just the second candidate
         let result = step_constraints.run(&mut board, true);
         assert!(result.is_changed());
-        assert_eq!(
-            result.description().unwrap().to_string(),
-            "Remove 1r1c2: 1r1c2 removed."
-        );
+        assert_eq!(result.description().unwrap().to_string(), "Remove 1r1c2: 1r1c2 removed.");
         assert!(!board.has_candidate(candidate1));
         assert!(!board.has_candidate(candidate2));
 
@@ -131,9 +122,6 @@ mod test {
         // Stepping the logic should try to remove 1r1c1 and discover this makes the board invalid
         let result = step_constraints.run(&mut board, true);
         assert!(result.is_invalid());
-        assert_eq!(
-            result.description().unwrap().to_string(),
-            "Remove 1r1c1: 1r1c1 remover failed to remove it."
-        );
+        assert_eq!(result.description().unwrap().to_string(), "Remove 1r1c1: 1r1c1 remover failed to remove it.");
     }
 }

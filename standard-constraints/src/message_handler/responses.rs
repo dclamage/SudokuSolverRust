@@ -9,10 +9,7 @@ pub(crate) struct CanceledResponse {
 
 impl CanceledResponse {
     pub fn new(nonce: i32) -> Self {
-        Self {
-            nonce,
-            response_type: "canceled".to_owned(),
-        }
+        Self { nonce, response_type: "canceled".to_owned() }
     }
 
     pub fn to_json(&self) -> String {
@@ -35,11 +32,7 @@ pub(crate) struct InvalidResponse {
 
 impl InvalidResponse {
     pub fn new(nonce: i32, message: &str) -> Self {
-        Self {
-            nonce,
-            response_type: "invalid".to_owned(),
-            message: message.to_owned(),
-        }
+        Self { nonce, response_type: "invalid".to_owned(), message: message.to_owned() }
     }
 
     pub fn to_json(&self) -> String {
@@ -61,10 +54,7 @@ pub(crate) struct DebugLogResponse {
 
 impl DebugLogResponse {
     pub fn new(message: &str) -> Self {
-        Self {
-            response_type: "debuglog".to_owned(),
-            message: message.to_owned(),
-        }
+        Self { response_type: "debuglog".to_owned(), message: message.to_owned() }
     }
 
     pub fn to_json(&self) -> String {
@@ -115,11 +105,7 @@ pub(crate) struct SolvedResponse {
 
 impl SolvedResponse {
     pub fn new(nonce: i32, solution: &[i32]) -> Self {
-        Self {
-            nonce,
-            response_type: "solved".to_owned(),
-            solution: solution.to_owned(),
-        }
+        Self { nonce, response_type: "solved".to_owned(), solution: solution.to_owned() }
     }
 
     pub fn to_json(&self) -> String {
@@ -144,12 +130,7 @@ pub(crate) struct CountResponse {
 
 impl CountResponse {
     pub fn new(nonce: i32, count: u64, in_progress: bool) -> Self {
-        Self {
-            nonce,
-            response_type: "count".to_owned(),
-            count,
-            in_progress,
-        }
+        Self { nonce, response_type: "count".to_owned(), count, in_progress }
     }
 
     pub fn to_json(&self) -> String {
@@ -185,13 +166,7 @@ impl LogicalResponse {
         if !message.ends_with('\n') {
             message.push('\n');
         }
-        Self {
-            nonce,
-            response_type: "logical".to_owned(),
-            cells: cells.to_owned(),
-            message,
-            is_valid,
-        }
+        Self { nonce, response_type: "logical".to_owned(), cells: cells.to_owned(), message, is_valid }
     }
 
     pub fn to_json(&self) -> String {

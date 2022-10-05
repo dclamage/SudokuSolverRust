@@ -60,12 +60,7 @@ impl OrthogonalPairsConstraint {
             candidate_pairs.insert(marker_type.to_owned(), cur_candidate_pairs);
         }
 
-        Self::new_with_candidate_pairs(
-            specific_name,
-            markers,
-            negative_constraints,
-            candidate_pairs,
-        )
+        Self::new_with_candidate_pairs(specific_name, markers, negative_constraints, candidate_pairs)
     }
 
     /// Creates a new [`OrthogonalPairsConstraint`] with the given parameters
@@ -93,17 +88,10 @@ impl OrthogonalPairsConstraint {
             }
         }
 
-        let negative_constraints: Vec<String> =
-            negative_constraints.iter().map(|&s| s.name()).collect();
-        let negative_constraints: Vec<&str> =
-            negative_constraints.iter().map(|s| s.as_str()).collect();
+        let negative_constraints: Vec<String> = negative_constraints.iter().map(|&s| s.name()).collect();
+        let negative_constraints: Vec<&str> = negative_constraints.iter().map(|s| s.as_str()).collect();
 
-        Self::new_with_candidate_pairs(
-            specific_name,
-            markers,
-            &negative_constraints,
-            candidate_pairs,
-        )
+        Self::new_with_candidate_pairs(specific_name, markers, &negative_constraints, candidate_pairs)
     }
 }
 
@@ -141,14 +129,8 @@ impl Constraint for OrthogonalPairsConstraint {
                     for other_value in inv_mask {
                         // This other value isn't allowed on the marker next to this value.
                         // Add a weak link between the two cells.
-                        result.push((
-                            marker.cell0.candidate(value),
-                            marker.cell1.candidate(other_value),
-                        ));
-                        result.push((
-                            marker.cell1.candidate(value),
-                            marker.cell0.candidate(other_value),
-                        ));
+                        result.push((marker.cell0.candidate(value), marker.cell1.candidate(other_value)));
+                        result.push((marker.cell1.candidate(value), marker.cell0.candidate(other_value)));
                     }
                 }
             }
@@ -207,11 +189,7 @@ pub struct OrthogonalPairsMarker {
 impl OrthogonalPairsMarker {
     /// Creates a new [`OrthogonalPairsMarker`] with the given parameters.
     pub fn new(marker_type: &str, cell0: CellIndex, cell1: CellIndex) -> Self {
-        Self {
-            marker_type: marker_type.to_owned(),
-            cell0,
-            cell1,
-        }
+        Self { marker_type: marker_type.to_owned(), cell0, cell1 }
     }
 }
 
@@ -227,11 +205,7 @@ pub struct StandardOrthogonalPairsMarker {
 impl StandardOrthogonalPairsMarker {
     /// Creates a new [`StandardOrthogonalPairsMarker`] with the given parameters.
     pub fn new(marker_type: StandardPairType, cell0: CellIndex, cell1: CellIndex) -> Self {
-        Self {
-            marker_type,
-            cell0,
-            cell1,
-        }
+        Self { marker_type, cell0, cell1 }
     }
 
     /// Create a new [`StandardOrthogonalPairsMarker`] with a the given sum.
@@ -286,10 +260,7 @@ mod test {
             &[],
             &[StandardPairType::Diff(1), StandardPairType::Ratio(2)],
         ));
-        let solver = SolverBuilder::default()
-            .with_constraint(kropki_constraint)
-            .build()
-            .unwrap();
+        let solver = SolverBuilder::default().with_constraint(kropki_constraint).build().unwrap();
 
         let solution_count = solver.find_solution_count(10000, None, None);
         assert!(solution_count.is_exact_count());
@@ -309,10 +280,7 @@ mod test {
             &[marker],
             &[StandardPairType::Diff(1), StandardPairType::Ratio(2)],
         ));
-        let solver = SolverBuilder::default()
-            .with_constraint(kropki_constraint)
-            .build()
-            .unwrap();
+        let solver = SolverBuilder::default().with_constraint(kropki_constraint).build().unwrap();
 
         let solution_count = solver.find_solution_count(2, None, None);
         assert!(solution_count.is_exact_count());
@@ -326,40 +294,20 @@ mod test {
         let cell0 = cu.cell(0, 0);
         let cell1 = cu.cell(0, 1);
         let marker = StandardOrthogonalPairsMarker::sum(10, cell0, cell1);
-        let xv_constraint = Arc::new(OrthogonalPairsConstraint::from_standard_markers(
-            size,
-            "XV",
-            &[marker],
-            &[],
-        ));
-        let solver = SolverBuilder::default()
-            .with_constraint(xv_constraint.clone())
-            .build()
-            .unwrap();
+        let xv_constraint = Arc::new(OrthogonalPairsConstraint::from_standard_markers(size, "XV", &[marker], &[]));
+        let solver = SolverBuilder::default().with_constraint(xv_constraint.clone()).build().unwrap();
         assert_eq!(solver.board().cell(cell0).count(), size - 1);
         assert!(!solver.board().cell(cell0).has(5));
         assert_eq!(solver.board().cell(cell1).count(), size - 1);
         assert!(!solver.board().cell(cell1).has(5));
 
-        let solver = SolverBuilder::default()
-            .with_constraint(xv_constraint)
-            .with_given(cell0, 2)
-            .build()
-            .unwrap();
+        let solver = SolverBuilder::default().with_constraint(xv_constraint).with_given(cell0, 2).build().unwrap();
         assert_eq!(solver.board().cell(cell1).count(), 1);
         assert_eq!(solver.board().cell(cell1).value(), 8);
 
         let marker = StandardOrthogonalPairsMarker::sum(5, cell0, cell1);
-        let xv_constraint = Arc::new(OrthogonalPairsConstraint::from_standard_markers(
-            size,
-            "XV",
-            &[marker],
-            &[],
-        ));
-        let solver = SolverBuilder::default()
-            .with_constraint(xv_constraint)
-            .build()
-            .unwrap();
+        let xv_constraint = Arc::new(OrthogonalPairsConstraint::from_standard_markers(size, "XV", &[marker], &[]));
+        let solver = SolverBuilder::default().with_constraint(xv_constraint).build().unwrap();
         assert_eq!(solver.board().cell(cell0).count(), 4);
         assert_eq!(solver.board().cell(cell0), ValueMask::from_lower_equal(4));
         assert_eq!(solver.board().cell(cell1).count(), 4);

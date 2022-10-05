@@ -1,5 +1,7 @@
 //! Contains [`Board`] which represents a Sudoku puzzle's size, constraints, and current solve state.
 
+use bitvec::bitvec;
+use bitvec::vec::BitVec;
 use itertools::Itertools;
 
 use crate::prelude::*;
@@ -37,6 +39,7 @@ pub struct BoardData {
     powerful_cells: Vec<CellIndex>,
     weak_links: Vec<CandidateLinks>,
     total_weak_links: usize,
+    exclusive_cells: Vec<BitVec>,
     constraints: Vec<Arc<dyn Constraint>>,
 }
 
@@ -45,11 +48,8 @@ impl Board {
         let mut data = BoardData::new(size, regions, constraints);
         let elims = data.init_weak_links();
 
-        let mut board = Board {
-            board: vec![data.all_values_mask; data.num_cells],
-            solved_count: 0,
-            data: Arc::new(data),
-        };
+        let mut board =
+            Board { board: vec![data.all_values_mask; data.num_cells], solved_count: 0, data: Arc::new(data) };
 
         board.clear_candidates(elims.iter());
 
@@ -206,6 +206,43 @@ impl Board {
         self.board[cell] = mask;
         true
     }
+
+    pub fn is_exclusive(&self, cell1: CellIndex, cell2: CellIndex) -> bool {
+        self.data.is_exclusive(cell1, cell2)
+    }
+
+    pub fn is_grouped(&self, cells: &[CellIndex]) -> bool {
+        for (i0, i1) in cells.iter().tuple_combinations() {
+            if !self.is_exclusive(*i0, *i1) {
+                return false;
+            }
+        }
+        true
+    }
+
+    pub fn is_grouped_for_value(&self, cells: &[CellIndex], value: usize) -> bool {
+        for (cell0, cell1) in cells.iter().tuple_combinations() {
+            let candidate0 = CandidateIndex::from_cv(*cell0, value);
+            let candidate1 = CandidateIndex::from_cv(*cell1, value);
+            if !self.data.has_weak_link(candidate0, candidate1) {
+                return false;
+            }
+        }
+        true
+    }
+
+    pub fn is_grouped_for_values(&self, cells: &[CellIndex], values: ValueMask) -> bool {
+        for (cell0, cell1) in cells.iter().tuple_combinations() {
+            for value in values.into_iter() {
+                let candidate0 = CandidateIndex::from_cv(*cell0, value);
+                let candidate1 = CandidateIndex::from_cv(*cell1, value);
+                if !self.data.has_weak_link(candidate0, candidate1) {
+                    return false;
+                }
+            }
+        }
+        true
+    }
 }
 
 impl BoardData {
@@ -216,11 +253,8 @@ impl BoardData {
         let houses = Self::create_houses(size, regions, constraints);
         let houses_by_cell = Self::create_houses_by_cell(size, &houses);
         let weak_links = vec![CandidateLinks::new(size); num_candidates];
-        let powerful_cells = constraints
-            .iter()
-            .flat_map(|c| c.powerful_cells())
-            .unique()
-            .collect();
+        let exclusive_cells = vec![bitvec![0; num_cells]; num_cells];
+        let powerful_cells = constraints.iter().flat_map(|c| c.powerful_cells()).unique().collect();
 
         BoardData {
             size,
@@ -232,6 +266,7 @@ impl BoardData {
             powerful_cells,
             weak_links,
             total_weak_links: 0,
+            exclusive_cells,
             constraints: constraints.to_vec(),
         }
     }
@@ -280,18 +315,22 @@ impl BoardData {
         &self.constraints
     }
 
-    fn create_houses(
-        size: usize,
-        regions: &[usize],
-        constraints: &[Arc<dyn Constraint>],
-    ) -> Vec<Arc<House>> {
+    pub fn constraints_mut(&mut self) -> &mut [Arc<dyn Constraint>] {
+        &mut self.constraints
+    }
+
+    pub fn has_weak_link(&self, candidate0: CandidateIndex, candidate1: CandidateIndex) -> bool {
+        self.weak_links[candidate0.index()].is_linked(candidate1)
+    }
+
+    pub fn is_exclusive(&self, cell1: CellIndex, cell2: CellIndex) -> bool {
+        self.exclusive_cells[cell1.index()][cell2.index()]
+    }
+
+    fn create_houses(size: usize, regions: &[usize], constraints: &[Arc<dyn Constraint>]) -> Vec<Arc<House>> {
         let cu = CellUtility::new(size);
         let num_cells = size * size;
-        let regions = if regions.len() == num_cells {
-            regions.to_vec()
-        } else {
-            default_regions(size)
-        };
+        let regions = if regions.len() == num_cells { regions.to_vec() } else { default_regions(size) };
 
         let mut houses: Vec<Arc<House>> = Vec::new();
 
@@ -375,7 +414,10 @@ impl BoardData {
 
     fn init_weak_links(&mut self) -> EliminationList {
         self.init_sudoku_weak_links();
-        self.init_constraint_weak_links()
+        let elminiation_list = self.init_constraint_weak_links();
+        self.init_exclusive_cells();
+
+        elminiation_list
     }
 
     fn init_sudoku_weak_links(&mut self) {
@@ -413,6 +455,25 @@ impl BoardData {
             }
         }
         elims
+    }
+
+    fn init_exclusive_cells(&mut self) {
+        let cu = CellUtility::new(self.size);
+        for (cell1, cell2) in (0..self.num_cells).tuple_combinations() {
+            let cell1 = cu.cell_index(cell1);
+            let cell2 = cu.cell_index(cell2);
+            let mut exclusive = true;
+            for val in 1..=self.size {
+                let candidate1 = cu.candidate(cell1, val);
+                let candidate2 = cu.candidate(cell2, val);
+                if !self.weak_links[candidate1.index()].is_linked(candidate2) {
+                    exclusive = false;
+                    break;
+                }
+            }
+            self.exclusive_cells[cell1.index()].set(cell2.index(), exclusive);
+            self.exclusive_cells[cell2.index()].set(cell1.index(), exclusive);
+        }
     }
 }
 
@@ -464,10 +525,7 @@ mod test {
         assert_eq!(board.num_cells(), 81);
         assert_eq!(board.num_candidates(), 729);
         assert_eq!(board.houses().len(), 27);
-        assert_eq!(
-            board.total_weak_links(),
-            ((board.size() - 1) * 4 - 4) * board.num_candidates()
-        );
+        assert_eq!(board.total_weak_links(), ((board.size() - 1) * 4 - 4) * board.num_candidates());
     }
 
     #[test]
@@ -477,9 +535,6 @@ mod test {
         assert_eq!(board.num_cells(), 256);
         assert_eq!(board.num_candidates(), 4096);
         assert_eq!(board.houses().len(), 48);
-        assert_eq!(
-            board.total_weak_links(),
-            ((board.size() - 1) * 4 - 6) * board.num_candidates()
-        );
+        assert_eq!(board.total_weak_links(), ((board.size() - 1) * 4 - 6) * board.num_candidates());
     }
 }

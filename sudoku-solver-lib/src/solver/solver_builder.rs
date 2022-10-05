@@ -48,9 +48,7 @@ impl SolverBuilder {
 
         // Special case an empty vector or a vector of the correct length
         // but with all elements the same value to mean "use no regions".
-        if regions.is_empty()
-            || regions.len() == size * size && regions.iter().all(|&r| r == regions[0])
-        {
+        if regions.is_empty() || regions.len() == size * size && regions.iter().all(|&r| r == regions[0]) {
             return self.with_no_regions();
         }
 
@@ -147,15 +145,14 @@ impl SolverBuilder {
                 return self;
             }
 
-            self.givens
-                .extend(givens.chars().enumerate().filter_map(|(i, c)| {
-                    let value = c.to_digit(10)?;
-                    if value == 0 {
-                        None
-                    } else {
-                        Some((cu.cell_index(i), value as usize))
-                    }
-                }));
+            self.givens.extend(givens.chars().enumerate().filter_map(|(i, c)| {
+                let value = c.to_digit(10)?;
+                if value == 0 {
+                    None
+                } else {
+                    Some((cu.cell_index(i), value as usize))
+                }
+            }));
         } else {
             let num_digits = cu.size().to_string().len();
             if givens.len() != self.size * self.size * num_digits {
@@ -164,25 +161,20 @@ impl SolverBuilder {
             }
 
             let givens_chunks_itr = givens.chars().chunks(num_digits);
-            self.givens.extend(
-                givens_chunks_itr
-                    .into_iter()
-                    .enumerate()
-                    .filter_map(|(i, c)| {
-                        // Convert the chunk into a string.
-                        let val_str = c.collect::<String>();
+            self.givens.extend(givens_chunks_itr.into_iter().enumerate().filter_map(|(i, c)| {
+                // Convert the chunk into a string.
+                let val_str = c.collect::<String>();
 
-                        // Convert the string into a number.
-                        let value = val_str.parse::<usize>().ok()?;
+                // Convert the string into a number.
+                let value = val_str.parse::<usize>().ok()?;
 
-                        // If the value is 0, ignore it.
-                        if value == 0 {
-                            None
-                        } else {
-                            Some((cu.cell_index(i), value))
-                        }
-                    }),
-            );
+                // If the value is 0, ignore it.
+                if value == 0 {
+                    None
+                } else {
+                    Some((cu.cell_index(i), value))
+                }
+            }));
         }
         self
     }
@@ -208,7 +200,12 @@ impl SolverBuilder {
         }
 
         let mut board = Board::new(self.size, &self.regions, &self.constraints);
-        let board_data = board.data();
+        let mut board_data = board.data();
+        let board_data = Arc::get_mut(&mut board_data);
+        if board_data.is_none() {
+            return Err("Failed to get mutable board data".to_owned());
+        }
+        let board_data = board_data.unwrap();
 
         // Apply the givens.
         for (cell, value) in self.givens {
@@ -222,20 +219,19 @@ impl SolverBuilder {
         while changed {
             changed = false;
 
-            for constraint in board_data.constraints() {
+            for constraint in board_data.constraints_mut() {
+                let constraint_mut = Arc::get_mut(constraint);
+                if constraint_mut.is_none() {
+                    return Err(format!("Failed to get mutable constraint for {}", constraint.name()));
+                }
+                let constraint = constraint_mut.unwrap();
+
                 let result = constraint.init_board(&mut board);
                 if let LogicalStepResult::Invalid(desc) = result {
                     if let Some(desc) = desc {
-                        return Err(format!(
-                            "{} has found the board is invalid: {}",
-                            constraint.name(),
-                            desc
-                        ));
+                        return Err(format!("{} has found the board is invalid: {}", constraint.name(), desc));
                     } else {
-                        return Err(format!(
-                            "{} has found the board is invalid.",
-                            constraint.name()
-                        ));
+                        return Err(format!("{} has found the board is invalid.", constraint.name()));
                     }
                 } else if result.is_changed() {
                     changed = true;
@@ -251,31 +247,19 @@ impl SolverBuilder {
             // 1. AllNakedSingles is used by the brute force solver.
             // 2. StepConstraints is used to apply constraint logic.
 
-            if !self
-                .logical_steps
-                .iter()
-                .any(|step| step.type_id() == TypeId::of::<AllNakedSingles>())
-            {
+            if !self.logical_steps.iter().any(|step| step.type_id() == TypeId::of::<AllNakedSingles>()) {
                 // The AllNakedSingles step is required by the brute force solver.
                 // Put it first in the list.
                 self.logical_steps.insert(0, Arc::new(AllNakedSingles));
             }
 
-            if !self
-                .logical_steps
-                .iter()
-                .any(|step| step.type_id() == TypeId::of::<StepConstraints>())
-            {
+            if !self.logical_steps.iter().any(|step| step.type_id() == TypeId::of::<StepConstraints>()) {
                 // The StepConstraints step is required to apply constraint logic.
                 // Put it in the list after any singles steps.
-                let naked_single_index = self
-                    .logical_steps
-                    .iter()
-                    .position(|step| step.type_id() == TypeId::of::<NakedSingle>());
-                let hidden_single_index = self
-                    .logical_steps
-                    .iter()
-                    .position(|step| step.type_id() == TypeId::of::<HiddenSingle>());
+                let naked_single_index =
+                    self.logical_steps.iter().position(|step| step.type_id() == TypeId::of::<NakedSingle>());
+                let hidden_single_index =
+                    self.logical_steps.iter().position(|step| step.type_id() == TypeId::of::<HiddenSingle>());
 
                 let index = match (naked_single_index, hidden_single_index) {
                     (Some(naked_single_index), Some(hidden_single_index)) => {
@@ -289,26 +273,13 @@ impl SolverBuilder {
             }
         }
 
-        let logical_solve_steps = self
-            .logical_steps
-            .iter()
-            .cloned()
-            .filter(|step| step.is_active_during_logical_solves())
-            .collect();
+        let logical_solve_steps =
+            self.logical_steps.iter().cloned().filter(|step| step.is_active_during_logical_solves()).collect();
 
-        let brute_force_steps = self
-            .logical_steps
-            .iter()
-            .cloned()
-            .filter(|step| step.is_active_during_brute_force_solves())
-            .collect();
+        let brute_force_steps =
+            self.logical_steps.iter().cloned().filter(|step| step.is_active_during_brute_force_solves()).collect();
 
-        let solver = Solver {
-            board,
-            logical_solve_steps,
-            brute_force_steps,
-            custom_info: self.custom_info,
-        };
+        let solver = Solver { board, logical_solve_steps, brute_force_steps, custom_info: self.custom_info };
 
         Ok(solver)
     }
@@ -354,25 +325,14 @@ mod test {
 
     #[test]
     fn test_required_logic() {
-        let solver = SolverBuilder::new(9)
-            .with_logical_step(Arc::new(HiddenSingle))
-            .build()
-            .unwrap();
+        let solver = SolverBuilder::new(9).with_logical_step(Arc::new(HiddenSingle)).build().unwrap();
         assert_equal(
-            solver
-                .brute_force_steps
-                .iter()
-                .map(|s| s.name())
-                .collect::<Vec<_>>(),
+            solver.brute_force_steps.iter().map(|s| s.name()).collect::<Vec<_>>(),
             ["All Naked Singles", "Hidden Single", "Step Constraints"],
         );
 
         assert_equal(
-            solver
-                .logical_solve_steps
-                .iter()
-                .map(|s| s.name())
-                .collect::<Vec<_>>(),
+            solver.logical_solve_steps.iter().map(|s| s.name()).collect::<Vec<_>>(),
             ["Hidden Single", "Step Constraints"],
         );
     }
