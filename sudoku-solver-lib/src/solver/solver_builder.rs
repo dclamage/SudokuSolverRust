@@ -200,12 +200,6 @@ impl SolverBuilder {
         }
 
         let mut board = Board::new(self.size, &self.regions, &self.constraints);
-        let mut board_data = board.data();
-        let board_data = Arc::get_mut(&mut board_data);
-        if board_data.is_none() {
-            return Err("Failed to get mutable board data".to_owned());
-        }
-        let board_data = board_data.unwrap();
 
         // Apply the givens.
         for (cell, value) in self.givens {
@@ -215,29 +209,7 @@ impl SolverBuilder {
         }
 
         // Initialize the constraints
-        let mut changed = true;
-        while changed {
-            changed = false;
-
-            for constraint in board_data.constraints_mut() {
-                let constraint_mut = Arc::get_mut(constraint);
-                if constraint_mut.is_none() {
-                    return Err(format!("Failed to get mutable constraint for {}", constraint.name()));
-                }
-                let constraint = constraint_mut.unwrap();
-
-                let result = constraint.init_board(&mut board);
-                if let LogicalStepResult::Invalid(desc) = result {
-                    if let Some(desc) = desc {
-                        return Err(format!("{} has found the board is invalid: {}", constraint.name(), desc));
-                    } else {
-                        return Err(format!("{} has found the board is invalid.", constraint.name()));
-                    }
-                } else if result.is_changed() {
-                    changed = true;
-                }
-            }
-        }
+        board.init_constraints()?;
 
         // Construct the logical step lists.
         if self.logical_steps.is_empty() {
