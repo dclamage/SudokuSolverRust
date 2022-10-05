@@ -37,7 +37,7 @@ impl Constraint for SudokuSolverConstraint {
     }
 
     fn init_board(&mut self, board: &mut Board) -> LogicalStepResult {
-        let mut changed = false;
+        // let mut changed = false;
 
         if self.arrow_cells.len() > 1 {
             self.is_all_grouped = board.is_grouped(&self.all_cells);
