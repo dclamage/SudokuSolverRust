@@ -76,7 +76,7 @@ mod test {
         let mut board = Board::new(
             size,
             &[],
-            &[
+            vec![
                 Arc::new(RemoveCandidateConstraint::new(candidate1)),
                 Arc::new(RemoveCandidateConstraint::new(candidate2)),
             ],
@@ -109,7 +109,7 @@ mod test {
         let mut board = Board::new(
             size,
             &[],
-            &[
+            vec![
                 Arc::new(RemoveCandidateConstraint::new(candidate1)),
                 Arc::new(RemoveCandidateConstraint::new(candidate2)),
             ],

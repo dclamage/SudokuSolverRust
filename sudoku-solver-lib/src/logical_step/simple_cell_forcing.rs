@@ -88,7 +88,7 @@ mod test {
 
     #[test]
     fn test_cell_forcing() {
-        let mut board = Board::new(9, &[], &[Arc::new(ExtraWeakLinksConstraint)]);
+        let mut board = Board::new(9, &[], vec![Arc::new(ExtraWeakLinksConstraint)]);
         let cu = board.cell_utility();
         let simple_cell_forcing = SimpleCellForcing;
 

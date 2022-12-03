@@ -12,7 +12,7 @@ use sudoku_solver_lib::prelude::*;
 ///
 /// This constraint is useful for representing constraints like consecutive, anti-ratio, XV along
 /// with their optional negative constraints.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct OrthogonalPairsConstraint {
     specific_name: String,
     markers: Vec<OrthogonalPairsMarker>,
@@ -294,14 +294,15 @@ mod test {
         let cell0 = cu.cell(0, 0);
         let cell1 = cu.cell(0, 1);
         let marker = StandardOrthogonalPairsMarker::sum(10, cell0, cell1);
-        let xv_constraint = Arc::new(OrthogonalPairsConstraint::from_standard_markers(size, "XV", &[marker], &[]));
-        let solver = SolverBuilder::default().with_constraint(xv_constraint.clone()).build().unwrap();
+        let xv_constraint = OrthogonalPairsConstraint::from_standard_markers(size, "XV", &[marker], &[]);
+        let solver = SolverBuilder::default().with_constraint(Arc::new(xv_constraint.clone())).build().unwrap();
         assert_eq!(solver.board().cell(cell0).count(), size - 1);
         assert!(!solver.board().cell(cell0).has(5));
         assert_eq!(solver.board().cell(cell1).count(), size - 1);
         assert!(!solver.board().cell(cell1).has(5));
 
-        let solver = SolverBuilder::default().with_constraint(xv_constraint).with_given(cell0, 2).build().unwrap();
+        let solver =
+            SolverBuilder::default().with_constraint(Arc::new(xv_constraint)).with_given(cell0, 2).build().unwrap();
         assert_eq!(solver.board().cell(cell1).count(), 1);
         assert_eq!(solver.board().cell(cell1).value(), 8);
 
