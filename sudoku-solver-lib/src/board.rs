@@ -44,7 +44,7 @@ pub struct BoardData {
 }
 
 impl Board {
-    pub fn new(size: usize, regions: &[usize], constraints: &[Arc<dyn Constraint>]) -> Board {
+    pub fn new(size: usize, regions: &[usize], constraints: Vec<Arc<dyn Constraint>>) -> Board {
         let mut data = BoardData::new(size, regions, constraints);
         let elims = data.init_weak_links();
 
@@ -65,35 +65,41 @@ impl Board {
     }
 
     pub fn init_constraints(&mut self) -> Result<(), String> {
-        // let board_data = Arc::get_mut(&mut self.data);
-        // if board_data.is_none() {
-        //     return Err("Failed to get mutable board data".to_owned());
-        // }
-        // let board_data = board_data.unwrap();
+        let constraint_count = self.data.constraints().len();
 
-        // let mut changed = true;
-        // while changed {
-        //     changed = false;
+        loop {
+            let mut changed = false;
 
-        //     for constraint in board_data.constraints_mut() {
-        //         let constraint_mut = Arc::get_mut(constraint);
-        //         if constraint_mut.is_none() {
-        //             return Err(format!("Failed to get mutable constraint for {}", constraint.name()));
-        //         }
-        //         let constraint = constraint_mut.unwrap();
+            for idx in 0..constraint_count {
+                let constraint = Arc::get_mut(&mut self.data).map(|d| d.take_constraint(idx));
+                if let Some(mut constraint) = constraint {
+                    let mut constraint_mut = Arc::get_mut(&mut constraint);
+                    if let Some(ref mut constraint_mut) = constraint_mut {
+                        let result = constraint_mut.init_board(self);
+                        if let LogicalStepResult::Invalid(desc) = result {
+                            if let Some(desc) = desc {
+                                return Err(format!("{} has found the board is invalid: {}", constraint.name(), desc));
+                            } else {
+                                return Err(format!("{} has found the board is invalid.", constraint.name()));
+                            }
+                        } else if result.is_changed() {
+                            changed = true;
+                        }
+                    } else {
+                        return Err(format!("Failed to get mutable constraint for {}", constraint.name()));
+                    }
+                    if let Some(d) = Arc::get_mut(&mut self.data) {
+                        d.insert_constraint(idx, constraint)
+                    }
+                } else {
+                    return Err("Failed to get mutable board data".to_owned());
+                }
+            }
 
-        //         let result = constraint.init_board(self);
-        //         if let LogicalStepResult::Invalid(desc) = result {
-        //             if let Some(desc) = desc {
-        //                 return Err(format!("{} has found the board is invalid: {}", constraint.name(), desc));
-        //             } else {
-        //                 return Err(format!("{} has found the board is invalid.", constraint.name()));
-        //             }
-        //         } else if result.is_changed() {
-        //             changed = true;
-        //         }
-        //     }
-        // }
+            if !changed {
+                break;
+            }
+        }
 
         Ok(())
     }
@@ -280,11 +286,11 @@ impl Board {
 }
 
 impl BoardData {
-    pub fn new(size: usize, regions: &[usize], constraints: &[Arc<dyn Constraint>]) -> BoardData {
+    pub fn new(size: usize, regions: &[usize], constraints: Vec<Arc<dyn Constraint>>) -> BoardData {
         let all_values_mask = ValueMask::from_all_values(size);
         let num_cells = size * size;
         let num_candidates = size * num_cells;
-        let houses = Self::create_houses(size, regions, constraints);
+        let houses = Self::create_houses(size, regions, &constraints);
         let houses_by_cell = Self::create_houses_by_cell(size, &houses);
         let weak_links = vec![CandidateLinks::new(size); num_candidates];
         let exclusive_cells = vec![bitvec![0; num_cells]; num_cells];
@@ -301,7 +307,7 @@ impl BoardData {
             weak_links,
             total_weak_links: 0,
             exclusive_cells,
-            constraints: constraints.to_vec(),
+            constraints,
         }
     }
 
@@ -349,8 +355,12 @@ impl BoardData {
         &self.constraints
     }
 
-    pub fn constraints_mut(&mut self) -> &mut [Arc<dyn Constraint>] {
-        &mut self.constraints
+    fn take_constraint(&mut self, idx: usize) -> Arc<dyn Constraint> {
+        self.constraints.remove(idx)
+    }
+
+    fn insert_constraint(&mut self, idx: usize, constraint: Arc<dyn Constraint>) {
+        self.constraints.insert(idx, constraint);
     }
 
     pub fn has_weak_link(&self, candidate0: CandidateIndex, candidate1: CandidateIndex) -> bool {
@@ -515,7 +525,7 @@ impl Default for Board {
     /// Create an empty board of size 9x9 with standard regions (boxes)
     /// and no additional constraints.
     fn default() -> Self {
-        Board::new(9, &[], &[])
+        Board::new(9, &[], vec![])
     }
 }
 
@@ -554,7 +564,7 @@ mod test {
 
     #[test]
     fn test_board9() {
-        let board = Board::new(9, &[], &[]);
+        let board = Board::new(9, &[], vec![]);
         assert_eq!(board.size(), 9);
         assert_eq!(board.num_cells(), 81);
         assert_eq!(board.num_candidates(), 729);
@@ -564,7 +574,7 @@ mod test {
 
     #[test]
     fn test_board16() {
-        let board = Board::new(16, &[], &[]);
+        let board = Board::new(16, &[], vec![]);
         assert_eq!(board.size(), 16);
         assert_eq!(board.num_cells(), 256);
         assert_eq!(board.num_candidates(), 4096);
