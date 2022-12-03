@@ -199,7 +199,7 @@ impl SolverBuilder {
             return Err(self.errors.join(", "));
         }
 
-        let mut board = Board::new(self.size, &self.regions, &self.constraints);
+        let mut board = Board::new(self.size, &self.regions, self.constraints);
 
         // Apply the givens.
         for (cell, value) in self.givens {
