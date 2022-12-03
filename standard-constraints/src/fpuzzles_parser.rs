@@ -417,7 +417,7 @@ mod test {
     fn test_classics() {
         let parser = FPuzzlesParser::new();
         for classic in FPUZZLES_CLASSICS_DATA {
-            test_unqiue_solution_from_lzstring(&parser, &classic.0, &classic.1);
+            test_unqiue_solution_from_lzstring(&parser, classic.0, classic.1);
         }
     }
 
