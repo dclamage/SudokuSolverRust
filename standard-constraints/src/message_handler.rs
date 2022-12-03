@@ -394,7 +394,7 @@ mod test {
 
         let response = CountResponse::from_json(result.last().unwrap().as_str()).unwrap();
         assert_eq!(response.nonce, 123, "Nonce should be 123 for solve message, but was {}", response.nonce);
-        assert_eq!(response.in_progress, false, "Count should be finished, but was in progress");
+        assert!(!response.in_progress, "Count should be finished, but was in progress");
         assert_eq!(response.count, 8448, "Count should be 8448 for solve message, but was {}", response.count);
     }
 

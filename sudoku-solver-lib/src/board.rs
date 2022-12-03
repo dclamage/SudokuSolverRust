@@ -404,7 +404,7 @@ impl BoardData {
         let mut house_for_region: HashMap<usize, Vec<CellIndex>> = HashMap::new();
         for cell in cu.all_cells() {
             let region = regions[cell.index()];
-            let house = house_for_region.entry(region).or_insert(Vec::new());
+            let house = house_for_region.entry(region).or_default();
             house.push(cell);
         }
 
