@@ -32,8 +32,9 @@ jobs:
         profile: minimal
         toolchain: stable
         target: wasm32-unknown-unknown
-        components: cargo-make
         override: true
+    - name: Install cargo-make
+      run: cargo install cargo-make
     - name: Make wasm pack
       working-directory: ./sudoku-solver-wasm
       run: cargo make --makefile pack.toml pack
