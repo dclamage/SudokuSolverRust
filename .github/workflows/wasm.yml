@@ -42,13 +42,14 @@ jobs:
     - name: Make wasm pack
       working-directory: ./sudoku-solver-wasm
       run: cargo make --makefile pack.toml pack
+    - name: Copy the result to the pages folder
+      run: cp ./sudoku-solver-wasm/pkg/fpuzzles-sudokusolver-wasm.user.js ./github-pages
     - name: Setup Pages
       uses: actions/configure-pages@v2        
     - name: Upload Artifact
       uses: actions/upload-pages-artifact@v1
       with:
-        name: fpuzzles-sudokusolver-wasm.user.js
-        path: ./sudoku-solver-wasm/pkg/fpuzzles-sudokusolver-wasm.user.js
+        path: github-pages/
     - name: Deploy to GitHub Pages
       id: deployment
       uses: actions/deploy-pages@v1
