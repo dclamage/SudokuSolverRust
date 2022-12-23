@@ -34,7 +34,7 @@ jobs:
         target: wasm32-unknown-unknown
         override: true
     - name: Install cargo-make
-      run: cargo install cargo-make
+      uses: davidB/rust-cargo-make@v1
     - name: Make wasm pack
       working-directory: ./sudoku-solver-wasm
       run: cargo make --makefile pack.toml pack
