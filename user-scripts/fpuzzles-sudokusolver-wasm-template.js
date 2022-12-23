@@ -15,12 +15,6 @@
     const doShim = function() {
         'use strict';
 
-        // Create the solver worker
-        function getWorkerURL(url) {
-            const content = `importScripts( "${ url }" );`;
-            return URL.createObjectURL(new Blob([content], { type: "text/javascript" }));
-        }
-
         let processingMessage = false;
 
         function receiveResponse(response) {
@@ -71,8 +65,7 @@
         }
 
         function createWorker() {
-            const workerURL = getWorkerURL('https://sudokusolverwasm.s3.us-west-2.amazonaws.com/fpuzzles-sudokusolver-wasm-worker.js');
-            let worker = new Worker(workerURL);
+            let worker = new Worker(wasmWorkerURL);
             worker.onmessage = function(msg) {
                 const response = JSON.parse(msg.data);
                 receiveResponse(response);
@@ -1017,4 +1010,8 @@
         clearInterval(intervalId);
         doShim();
     }, 16);
+
+    // This is a base64 encoded version of the wasm file.
+    // It is generated automatically by the build script.
+    const wasmWorkerURL = '${WORKER_JS_URL}';
 })();

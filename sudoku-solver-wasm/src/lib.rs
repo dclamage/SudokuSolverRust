@@ -2,6 +2,7 @@ mod utils;
 
 use standard_constraints::message_handler::*;
 use sudoku_solver_lib::prelude::Cancellation;
+use utils::set_panic_hook;
 use wasm_bindgen::prelude::*;
 
 // When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
@@ -30,6 +31,8 @@ impl SendResult for SendResultWasm {
 
 #[wasm_bindgen]
 pub fn solve(message: &str, receive_result: &js_sys::Function) {
+    set_panic_hook();
+
     let send_result = Box::new(SendResultWasm::new(receive_result));
     let mut message_handler = MessageHandler::new(send_result);
     message_handler.handle_message(message, Cancellation::default());

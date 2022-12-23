@@ -1,0 +1,44 @@
+[tasks.install-wasm-pack]
+description = "Installs wasm-pack crate."
+category = "wasm"
+install_crate = { crate_name = "wasm-pack", binary = "wasm-pack", test_arg = "-V" }
+
+[tasks.wasm-pack]
+dependencies = ["install-wasm-pack"]
+command = "wasm-pack"
+args = ["build", "--target", "no-modules"]
+
+[tasks.create-user-script]
+dependencies = ["wasm-pack"]
+script_runner = "@rust"
+script = '''
+// cargo-deps: base64="0.20.0"
+fn main() {
+    let wasm_js = std::fs::read_to_string("./pkg/sudoku_solver_wasm.js").unwrap();
+    let wasm_bin = std::fs::read("./pkg/sudoku_solver_wasm_bg.wasm").unwrap();
+    let template_js = std::fs::read_to_string("../user-scripts/fpuzzles-sudokusolver-wasm-worker-template.js").unwrap();
+    let userscript_template_js = std::fs::read_to_string("../user-scripts/fpuzzles-sudokusolver-wasm-template.js").unwrap();
+    let output_userscript_path = "./pkg/fpuzzles-sudokusolver-wasm.user.js";
+
+    // Create a url for the wasm js
+    let wasm_js_url = format!("data:text/javascript;base64,{}", base64::encode(wasm_js));
+
+    // Create a url for the wasm binary
+    let wasm_bin_url = format!("data:application/wasm;base64,{}", base64::encode(wasm_bin));
+
+    // Update the worker template
+    let worker_js = template_js.replace("${WASM_JS_URL}", &wasm_js_url).replace("${WASM_BIN_URL}", &wasm_bin_url);
+
+    // Create a url for the worker template js
+    let worker_js_url = format!("data:text/javascript;base64,{}", base64::encode(worker_js));
+
+    // Update the userscript template
+    let userscript_template_js = userscript_template_js.replace("${WORKER_JS_URL}", &worker_js_url);
+
+    // Write the output js
+    std::fs::write(output_userscript_path, userscript_template_js).unwrap();
+}
+'''
+
+[tasks.pack]
+dependencies = ["create-user-script"]
