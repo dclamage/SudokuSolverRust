@@ -31,26 +31,19 @@ jobs:
       with:
         profile: minimal
         toolchain: stable
+        target: wasm32-unknown-unknown
+        components: cargo-make
         override: true
-    - name: Install cargo-make
-      uses: actions-rs/cargo@v1
-      with:
-        command: install
-        args: cargo-make
-    - name: Enter wasm folder
-      run: cd sudoku-solver-wasm && ls
     - name: Make wasm pack
-      uses: actions-rs/cargo@v1
-      with:
-        command: make
-        args: --makefile pack.toml pack
+      working-directory: ./sudoku-solver-wasm
+      run: cargo make --makefile pack.toml pack
     - name: Setup Pages
       uses: actions/configure-pages@v2        
     - name: Upload Artifact
       uses: actions/upload-pages-artifact@v1
       with:
         name: fpuzzles-sudokusolver-wasm.user.js
-        path: ./pkg/fpuzzles-sudokusolver-wasm.user.js
+        path: ./sudoku-solver-wasm/pkg/fpuzzles-sudokusolver-wasm.user.js
     - name: Deploy to GitHub Pages
       id: deployment
       uses: actions/deploy-pages@v1
