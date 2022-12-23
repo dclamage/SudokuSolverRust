@@ -38,12 +38,12 @@ jobs:
         command: install
         args: cargo-make
     - name: Enter wasm folder
-      run: cd sudoku-solver-wasm
+      run: cd sudoku-solver-wasm && ls
     - name: Make wasm pack
       uses: actions-rs/cargo@v1
       with:
         command: make
-        args: --makefile ./pack.toml pack
+        args: --makefile pack.toml pack
     - name: Setup Pages
       uses: actions/configure-pages@v2        
     - name: Upload Artifact
