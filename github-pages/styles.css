@@ -1,0 +1,132 @@
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Open Sans', sans-serif;
+    font-size: 16px;
+    background-color: #fafafa;
+}
+
+.hero {
+    width: 100%;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    color: #bfc5bf;
+    background: linear-gradient(to right, #21183c, #41298A);
+}
+
+.hero h1 {
+    font-size: 3rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+}
+
+.hero h2 {
+    font-size: 1.2em;
+    font-weight: 500;
+    text-align: center;
+    margin: 1em 0;
+    font-style: italic;
+    margin-top: -0.5em;
+}
+
+.hero p {
+    font-size: 1.125rem;
+    margin-bottom: 2rem;
+}
+
+.hero .btn {
+    display: inline-block;
+    padding: 1rem 2rem;
+    border: none;
+    border-radius: 0.25rem;
+    font-size: 1rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background-color: #8A7645;
+    color: #fff;
+    text-decoration: none;
+}
+
+.hero .btn i {
+    font-size: 1.5em;
+    color: white;
+}
+
+.hero .btn:hover {
+    background-color: #3D331C;
+}
+
+.hero .social-links {
+    margin-top: 2rem;
+    display: flex;
+    justify-content: center;
+}
+
+.hero .social-links a {
+    display: inline-block;
+    margin: 0 0.5rem;
+    width: 2rem;
+    height: 2rem;
+    background-color: #8A7645;
+    border-radius: 50%;
+    color: #fff;
+    font-size: 1rem;
+    line-height: 2rem;
+    transition: all 0.2s ease;
+}
+
+.hero .social-links a:hover {
+    background-color: #3D331C;
+}
+
+.description {
+    width: 60%;
+    margin: 0 auto;
+}
+
+a.desc-link {
+    color: #bfc5bf;
+    text-decoration: none;
+    position: relative;
+    transition: all 0.2s ease;
+    display: inline-block;
+    vertical-align: middle;
+    padding: 0.25em 0.5em;
+    line-height: 1.5;
+    font-weight: 600;
+}
+
+a.desc-link:before,
+a.desc-link:after {
+    content: "[";
+    display: inline-block;
+    vertical-align: middle;
+    height: 100%;
+    font-size: 2em;
+    margin-top: -0.15em;
+}
+
+a.desc-link:after {
+    content: "]";
+    margin-top: -0.15em;
+}
+
+a.desc-link:hover {
+    color: #a8c57d;
+}
+
+a.desc-link img {
+    width: 1em;
+    height: 1em;
+    vertical-align: middle;
+}
