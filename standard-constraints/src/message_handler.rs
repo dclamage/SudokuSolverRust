@@ -160,7 +160,7 @@ impl MessageHandler {
             let real_mask = real_cells[cell_index];
             let logical_mask = logical_cells[cell_index];
             for value in 1..=size {
-                let solution_index = (cell_index * size + value - 1) as usize;
+                let solution_index = cell_index * size + value - 1;
                 let have_value_real = real_mask.has(value);
                 let have_value_logical = logical_mask.has(value);
                 if !have_value_real && have_value_logical {
