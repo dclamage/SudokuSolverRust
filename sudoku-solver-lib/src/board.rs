@@ -194,9 +194,15 @@ impl Board {
         valid
     }
 
+    pub fn clear_mask(&mut self, cell: CellIndex, mask: ValueMask) -> bool {
+        let cell = cell.index();
+        self.board[cell] = self.board[cell] & (!mask).solved();
+        !self.board[cell].is_empty()
+    }
+
     pub fn keep_mask(&mut self, cell: CellIndex, mask: ValueMask) -> bool {
         let cell = cell.index();
-        self.board[cell] = self.board[cell] & mask;
+        self.board[cell] = self.board[cell] & mask.solved();
         !self.board[cell].is_empty()
     }
 
