@@ -239,9 +239,9 @@ impl StandardOrthogonalPairsMarker {
 impl From<StandardOrthogonalPairsMarker> for OrthogonalPairsMarker {
     fn from(marker: StandardOrthogonalPairsMarker) -> Self {
         match marker.marker_type {
-            StandardPairType::Sum(n) => Self::new(&format!("s{}", n), marker.cell0, marker.cell1),
-            StandardPairType::Diff(n) => Self::new(&format!("d{}", n), marker.cell0, marker.cell1),
-            StandardPairType::Ratio(n) => Self::new(&format!("r{}", n), marker.cell0, marker.cell1),
+            StandardPairType::Sum(n) => Self::new(&format!("s{n}"), marker.cell0, marker.cell1),
+            StandardPairType::Diff(n) => Self::new(&format!("d{n}"), marker.cell0, marker.cell1),
+            StandardPairType::Ratio(n) => Self::new(&format!("r{n}"), marker.cell0, marker.cell1),
         }
     }
 }

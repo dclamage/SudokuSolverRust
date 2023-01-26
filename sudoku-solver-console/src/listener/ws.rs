@@ -21,7 +21,7 @@ pub async fn client_connection(ws: WebSocket, clients: Clients) {
 
     tokio::task::spawn(client_rcv.forward(client_ws_sender).map(|result| {
         if let Err(e) = result {
-            println!("Error sending websocket msg: {}", e);
+            println!("Error sending websocket msg: {e}");
         }
     }));
 
@@ -31,7 +31,7 @@ pub async fn client_connection(ws: WebSocket, clients: Clients) {
 
     clients.lock().await.insert(uuid.clone(), new_client);
 
-    println!("Client {} connected", uuid);
+    println!("Client {uuid} connected");
 
     let mut handler = ThreadedHandler::new(client_sender.clone()).await;
 
@@ -57,7 +57,7 @@ pub async fn client_connection(ws: WebSocket, clients: Clients) {
     handler.close();
 
     clients.lock().await.remove(&uuid);
-    println!("Client {} Disconnected", uuid);
+    println!("Client {uuid} Disconnected");
 }
 
 struct SendResultForWS {

@@ -32,7 +32,7 @@ impl LogicalStepDesc {
 
     /// Creates a new instance from a description and a list of eliminations.
     pub fn from_elims(desc: &str, elimination_list: &EliminationList) -> Self {
-        let step = format!("{} => {}", desc, elimination_list);
+        let step = format!("{desc} => {elimination_list}");
         Self::from_desc(&step)
     }
 

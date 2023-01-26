@@ -96,13 +96,13 @@ impl FPuzzlesBoard {
 
         let decompressed_str = String::from_utf16(&decompressed);
         if let Err(error) = decompressed_str {
-            return Err(format!("Failed to convert decompressed string to UTF-16: {}", error));
+            return Err(format!("Failed to convert decompressed string to UTF-16: {error}"));
         }
         let decompressed_str = decompressed_str.unwrap();
 
         let board = Self::from_json(&decompressed_str);
         if let Err(error) = board {
-            return Err(format!("Failed to parse JSON: {}", error));
+            return Err(format!("Failed to parse JSON: {error}"));
         }
         let board = board.unwrap();
 

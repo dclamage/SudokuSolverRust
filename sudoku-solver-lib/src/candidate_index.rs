@@ -54,7 +54,7 @@ impl CandidateIndex {
 impl std::fmt::Display for CandidateIndex {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         let (cell, value) = self.cell_index_and_value();
-        write!(f, "{}{}", value, cell)
+        write!(f, "{value}{cell}")
     }
 }
 

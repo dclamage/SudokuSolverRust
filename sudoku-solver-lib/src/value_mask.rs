@@ -745,7 +745,7 @@ impl fmt::Display for ValueMask {
             } else {
                 write!(f, ",")?;
             }
-            write!(f, "{}", value)?;
+            write!(f, "{value}")?;
         }
         Ok(())
     }
@@ -753,7 +753,7 @@ impl fmt::Display for ValueMask {
 
 impl fmt::Debug for ValueMask {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "ValueMask({})", self)
+        write!(f, "ValueMask({self})")
     }
 }
 

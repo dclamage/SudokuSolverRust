@@ -204,7 +204,7 @@ impl SolverBuilder {
         // Apply the givens.
         for (cell, value) in self.givens {
             if !board.cell(cell).is_solved() && !board.set_solved(cell, value) {
-                return Err(format!("Failed to set given {}{}", value, cell));
+                return Err(format!("Failed to set given {value}{cell}"));
             }
         }
 

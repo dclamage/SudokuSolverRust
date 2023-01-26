@@ -166,10 +166,10 @@ impl Extend<LogicalStepDesc> for LogicalStepDescList {
 impl std::fmt::Display for LogicalStepDescList {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         for step in self.steps.iter().take(self.steps.len() - 1) {
-            writeln!(f, "{}", step)?;
+            writeln!(f, "{step}")?;
         }
         if let Some(last_step) = self.steps.last() {
-            write!(f, "{}", last_step)?;
+            write!(f, "{last_step}")?;
         }
         Ok(())
     }

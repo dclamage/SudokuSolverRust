@@ -46,7 +46,7 @@ impl std::fmt::Display for LogicalSolveResult {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let desc = self.description();
         if let Some(desc) = desc {
-            write!(f, "{}", desc)
+            write!(f, "{desc}")
         } else {
             write!(f, "No logical steps found.")
         }

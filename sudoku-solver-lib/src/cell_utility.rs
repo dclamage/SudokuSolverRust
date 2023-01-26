@@ -186,10 +186,10 @@ impl CellUtility {
 
         for cell_group in cell_string.split(';').map(|s| s.trim()).filter(|s| !s.is_empty()) {
             if !cell_group.is_ascii() {
-                return Err(format!("Invalid cell group (invalid characters): {}", cell_group));
+                return Err(format!("Invalid cell group (invalid characters): {cell_group}"));
             }
 
-            let err_msg = format!("Invalid cell group: {}", cell_group);
+            let err_msg = format!("Invalid cell group: {cell_group}");
             let cell_group = cell_group.to_ascii_lowercase();
             let cell_group = cell_group.as_bytes();
 

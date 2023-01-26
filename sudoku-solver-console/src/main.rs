@@ -25,7 +25,7 @@ async fn main() {
     const VERSION: &str = env!("CARGO_PKG_VERSION");
 
     println!("{} {}", "Sudoku Solver".to_owned().green(), VERSION);
-    println!("{}", AUTHOR);
+    println!("{AUTHOR}");
     println!("Sudoku variant solver utility.");
     println!();
     println!("GitHub: https://github.com/dclamage/SudokuSolverRust");

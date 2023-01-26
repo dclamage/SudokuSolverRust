@@ -17,9 +17,9 @@ impl StandardPairType {
     /// Returns the name of the constraint type.
     pub fn name(&self) -> String {
         match self {
-            Self::Sum(n) => format!("s{}", n),
-            Self::Diff(n) => format!("d{}", n),
-            Self::Ratio(n) => format!("r{}", n),
+            Self::Sum(n) => format!("s{n}"),
+            Self::Diff(n) => format!("d{n}"),
+            Self::Ratio(n) => format!("r{n}"),
         }
     }
 

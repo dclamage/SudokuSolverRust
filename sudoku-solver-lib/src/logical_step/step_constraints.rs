@@ -44,7 +44,7 @@ mod test {
 
     impl RemoveCandidateConstraint {
         fn new(candidate: CandidateIndex) -> Self {
-            Self { specific_name: format!("Remove {}", candidate), candidate }
+            Self { specific_name: format!("Remove {candidate}"), candidate }
         }
     }
 

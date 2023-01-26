@@ -236,7 +236,7 @@ impl Display for EliminationList {
             }
 
             let desc = descs.iter().join(";");
-            write!(f, "{}", desc)
+            write!(f, "{desc}")
         }
     }
 }

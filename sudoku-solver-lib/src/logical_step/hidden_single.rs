@@ -36,7 +36,7 @@ impl LogicalStep for HiddenSingle {
             if all_values_seen != all_values {
                 let missing_mask: ValueMask = all_values & !all_values_seen;
                 let desc: Option<LogicalStepDesc> = if generate_description {
-                    Some(format!("{} has nowhere to place {}", house, missing_mask).into())
+                    Some(format!("{house} has nowhere to place {missing_mask}").into())
                 } else {
                     None
                 };
@@ -54,14 +54,14 @@ impl LogicalStep for HiddenSingle {
                 if cell_mask.has(value) {
                     if board.set_solved(cell, value) {
                         let desc: Option<LogicalStepDesc> = if generate_description {
-                            Some(format!("In {}: {}={}", house, cell, value).into())
+                            Some(format!("In {house}: {cell}={value}").into())
                         } else {
                             None
                         };
                         return LogicalStepResult::Changed(desc);
                     } else {
                         let desc: Option<LogicalStepDesc> = if generate_description {
-                            Some(format!("In {}: {} cannot be set to {}", house, cell, value).into())
+                            Some(format!("In {house}: {cell} cannot be set to {value}").into())
                         } else {
                             None
                         };

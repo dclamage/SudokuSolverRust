@@ -61,7 +61,7 @@ impl ChessConstraint {
             }
         }
 
-        Self::new(&format!("Anti-Taxicab {}", dist), offset)
+        Self::new(&format!("Anti-Taxicab {dist}"), offset)
     }
 }
 

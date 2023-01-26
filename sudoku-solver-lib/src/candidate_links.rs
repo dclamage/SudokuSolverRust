@@ -71,7 +71,7 @@ impl std::fmt::Display for CandidateLinks {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "CandidateLinks {{")?;
         for candidate in self.links() {
-            write!(f, " {}", candidate)?;
+            write!(f, " {candidate}")?;
         }
         write!(f, " }}")
     }

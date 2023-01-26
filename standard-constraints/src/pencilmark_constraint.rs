@@ -13,7 +13,7 @@ pub struct PencilmarkConstraint {
 impl PencilmarkConstraint {
     /// Creates a new [`PencilmarkConstraint`] with the given cell and values.
     pub fn new(cell: CellIndex, values: ValueMask) -> Self {
-        Self { specific_name: format!("{}{}", values, cell), cell, values }
+        Self { specific_name: format!("{values}{cell}"), cell, values }
     }
 
     /// Creates a new [`PencilmarkConstraint`] that restricts the given cell to only even values.
@@ -23,7 +23,7 @@ impl PencilmarkConstraint {
         for i in (2..=size).step_by(2) {
             values = values | ValueMask::from_value(i);
         }
-        Self { specific_name: format!("Even {}", cell), cell, values }
+        Self { specific_name: format!("Even {cell}"), cell, values }
     }
 
     /// Creates a new [`PencilmarkConstraint`] that restricts the given cell to only odd values.
@@ -33,7 +33,7 @@ impl PencilmarkConstraint {
         for i in (1..=size).step_by(2) {
             values = values | ValueMask::from_value(i);
         }
-        Self { specific_name: format!("Odd {}", cell), cell, values }
+        Self { specific_name: format!("Odd {cell}"), cell, values }
     }
 
     /// Creates a new [`PencilmarkConstraint`] that restricts the given cell to only prime values.
@@ -45,7 +45,7 @@ impl PencilmarkConstraint {
                 values = values | ValueMask::from_value(i);
             }
         }
-        Self { specific_name: format!("Prime {}", cell), cell, values }
+        Self { specific_name: format!("Prime {cell}"), cell, values }
     }
 
     fn is_prime(n: usize) -> bool {

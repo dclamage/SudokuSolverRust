@@ -37,9 +37,9 @@ impl SingleSolutionResult {
 impl std::fmt::Display for SingleSolutionResult {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         if let Some(board) = self.board() {
-            write!(f, "{}", board)
+            write!(f, "{board}")
         } else if let SingleSolutionResult::Error(err) = self {
-            write!(f, "Error: {}", err)
+            write!(f, "Error: {err}")
         } else {
             write!(f, "No solution")
         }
