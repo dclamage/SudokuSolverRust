@@ -13,7 +13,7 @@ edition = "2021"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-itertools = "0.10.3"
+itertools = "0.12.0"
 bitvec = "~1.0"
 getrandom = { version = "0.2.7", features = ["js"] }
 rand = "0.8.5"

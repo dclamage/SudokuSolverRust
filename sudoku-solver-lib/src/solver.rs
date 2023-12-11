@@ -135,6 +135,14 @@ impl Solver {
         true
     }
 
+    pub fn run_singles_only(&mut self) -> bool {
+        let mut board = self.board.clone();
+        let result = self.run_brute_force_logic(&mut board);
+        self.board = board;
+
+        result
+    }
+
     /// Use brute-force methods to find the first solution to the puzzle.
     ///
     /// The solution is the lexicographically first solution and is not
@@ -144,8 +152,7 @@ impl Solver {
         let mut board_stack = Vec::new();
         board_stack.push((Box::new(self.board.clone()), cu.cell(0, 0)));
 
-        while !board_stack.is_empty() {
-            let (mut board, mut cell) = board_stack.pop().unwrap();
+        while let Some((mut board, mut cell)) = board_stack.pop() {
             if !self.run_brute_force_logic(&mut board) {
                 continue;
             }
@@ -237,8 +244,7 @@ impl Solver {
         let mut board_stack = Vec::new();
         board_stack.push(Box::new(board.clone()));
 
-        while !board_stack.is_empty() {
-            let mut board = board_stack.pop().unwrap();
+        while let Some(mut board) = board_stack.pop() {
             if !self.run_brute_force_logic(&mut board) {
                 continue;
             }
@@ -409,7 +415,6 @@ impl Solver {
                 continue;
             }
 
-            let mask = mask;
             for value in mask {
                 let cur_candidate = cell.candidate(value);
                 let cur_candidate_count = solution_receiver.num_solutions_per_candidate[cur_candidate.index()];

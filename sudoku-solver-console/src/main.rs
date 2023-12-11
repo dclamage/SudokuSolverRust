@@ -1,7 +1,11 @@
 mod listener;
 
+use std::io::{self, BufRead, Write};
+
 use clap::Parser;
 use colored::Colorize;
+
+use sudoku_solver_lib::prelude::*;
 
 #[derive(Debug, Parser)]
 #[clap(name = "Sudoku Solver")]
@@ -15,11 +19,38 @@ struct Args {
     /// Listen for websocket connections
     #[clap(short, long, action = clap::ArgAction::SetTrue)]
     listen: bool,
+    #[clap(short, long, action = clap::ArgAction::SetTrue)]
+    benchmark: bool,
 }
 
 #[tokio::main]
 async fn main() {
     let args = Args::parse();
+
+    if args.benchmark {
+        // Declare a counts array
+        let mut counts = [0; 2];
+
+        // Read from stdin until EOF
+        let stdin = io::stdin();
+        for line in stdin.lock().lines() {
+            let line = line.expect("Failed to read line");
+            let puzzle = line.trim_end();
+            assert!(puzzle.len() == 81);
+            let mut solver = SolverBuilder::default()
+                .with_givens_string(puzzle)
+                .build()
+                .unwrap();
+            let result = solver.run_singles_only();
+            counts[result as usize] += 1;
+        }
+        let valid = counts[1];
+        let invalid = counts[0];
+        println!("Valid: {valid}");
+        println!("Invalid: {invalid}");
+        std::io::stdout().flush().unwrap();
+        return;
+    }
 
     const AUTHOR: &str = env!("CARGO_PKG_AUTHORS");
     const VERSION: &str = env!("CARGO_PKG_VERSION");
