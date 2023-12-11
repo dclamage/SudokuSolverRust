@@ -56,6 +56,13 @@ impl Board {
         board
     }
 
+    pub fn reset(&mut self) {
+        for i in 0..self.data.num_cells {
+            self.board[i] = self.data.all_values_mask;
+        }
+        self.solved_count = 0;
+    }
+
     pub fn deep_clone(&self) -> Board {
         Board {
             board: self.board.clone(),

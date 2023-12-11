@@ -33,14 +33,31 @@ async fn main() {
 
         // Read from stdin until EOF
         let stdin = io::stdin();
+        let mut solver = SolverBuilder::default()
+            .build()
+            .unwrap();
         for line in stdin.lock().lines() {
             let line = line.expect("Failed to read line");
             let puzzle = line.trim_end();
             assert!(puzzle.len() == 81);
-            let mut solver = SolverBuilder::default()
-                .with_givens_string(puzzle)
-                .build()
-                .unwrap();
+            
+            solver.reset();
+
+            let mut givens_invalid = false;
+            for (i, c) in puzzle.chars().enumerate() {
+                if ('1'..='9').contains(&c) {
+                    let value = (c as u8) - b'0';
+                    if !solver.set_given(CellIndex::new(i, 9), value as usize) {
+                        givens_invalid = true;
+                        break;
+                    }
+                }
+            }
+            if givens_invalid {
+                counts[0] += 1;
+                continue;
+            }
+
             let result = solver.run_singles_only();
             counts[result as usize] += 1;
         }

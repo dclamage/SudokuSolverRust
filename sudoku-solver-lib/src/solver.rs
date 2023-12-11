@@ -45,6 +45,14 @@ impl Solver {
         &self.board
     }
 
+    pub fn reset(&mut self) {
+        self.board.reset();
+    }
+
+    pub fn set_given(&mut self, cell: CellIndex, value: usize) -> bool {
+        self.board.set_solved(cell, value)
+    }
+
     pub fn size(&self) -> usize {
         self.board.size()
     }
